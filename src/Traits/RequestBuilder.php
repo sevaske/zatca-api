@@ -103,14 +103,15 @@ trait RequestBuilder
         ];
 
         try {
-            return $this->httpClient->request('POST', $uri, $options);
+            return $this->httpClient->request($method, $uri, $options);
         } catch (ClientExceptionInterface $e) {
-            throw new ZatcaRequestException($e->getMessage(), [
+            // PSR-18 does NOT guarantee a response object on exception
+            $context = [
                 'uri' => $uri,
                 'method' => $method,
-                'message' => $e->getMessage(),
-                'content' => $e->getResponse()->getBody()->getContents(),
-            ], $e->getCode(), $e);
+            ];
+
+            throw new ZatcaRequestException($e->getMessage(), $context, $e->getCode(), $e);
         }
     }
 }
