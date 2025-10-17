@@ -1,6 +1,6 @@
 <?php
 
-namespace Sevaske\ZatcaApi\Tests;
+namespace Tests;
 
 use PHPUnit\Framework\TestCase;
 use Sevaske\ZatcaApi\AuthToken;

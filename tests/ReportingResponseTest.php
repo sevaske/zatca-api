@@ -1,9 +1,10 @@
 <?php
 
-namespace Sevaske\ZatcaApi\Tests;
+namespace Tests;
 
 use PHPUnit\Framework\TestCase;
 use Sevaske\ZatcaApi\Responses\ReportingResponse;
+use Sevaske\ZatcaApi\Responses\ZatcaResponse;
 
 class ReportingResponseTest extends TestCase
 {
@@ -141,6 +142,7 @@ class ReportingResponseTest extends TestCase
 
     public function test_internal_server_error_500_response(): void
     {
+        /** @var ZatcaResponse $response */
         $response = $this->makeResponse([
             'category' => 'HTTP-Errors',
             'code' => '500',

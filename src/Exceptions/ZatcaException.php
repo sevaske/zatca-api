@@ -2,24 +2,7 @@
 
 namespace Sevaske\ZatcaApi\Exceptions;
 
-use Sevaske\ZatcaApi\Interfaces\ZatcaExceptionInterface;
+use Sevaske\Support\Exceptions\ContextableException;
+use Sevaske\ZatcaApi\Interfaces\ZatcaExceptionInterfaces;
 
-class ZatcaException extends \Exception implements ZatcaExceptionInterface
-{
-    public function __construct(string $message = '', protected array $context = [], int $code = 0, ?\Throwable $previous = null)
-    {
-        parent::__construct($message, $code, $previous);
-    }
-
-    public function withContext(array $context): self
-    {
-        $this->context = array_merge($this->context, $context);
-
-        return $this;
-    }
-
-    public function context(): array
-    {
-        return $this->context;
-    }
-}
+class ZatcaException extends ContextableException implements ZatcaExceptionInterfaces {}

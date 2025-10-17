@@ -3,24 +3,40 @@
 namespace Sevaske\ZatcaApi\Responses;
 
 use Psr\Http\Message\ResponseInterface;
+use Sevaske\Support\Traits\HasAttributes;
 use Sevaske\ZatcaApi\Exceptions\ZatcaException;
 use Sevaske\ZatcaApi\Exceptions\ZatcaResponseException;
 use Sevaske\ZatcaApi\Interfaces\ZatcaResponseInterface;
-use Sevaske\ZatcaApi\Traits\HasAttributes;
 
 class ZatcaResponse implements ZatcaResponseInterface
 {
     use HasAttributes;
 
     /**
+     * @var ResponseInterface|array
+     */
+    protected $response;
+
+    protected ?int $httpStatusCode = null;
+
+    /**
      * Constructs the ApiResponse object by parsing a PSR-7 response into attributes.
      *
      * @param  ResponseInterface|array  $response  The original PSR-7 HTTP response OR array.
+     * @param  int|null  $httpStatusCode  The HTTP status (optional).
      *
      * @throws ZatcaException If the response body cannot be parsed as valid JSON.
      */
-    public function __construct(protected ResponseInterface|array $response)
+    public function __construct($response, ?int $httpStatusCode = null)
     {
+        $this->response = $response;
+
+        if ($httpStatusCode === null && $response instanceof ResponseInterface) {
+            $httpStatusCode = $response->getStatusCode();
+        }
+
+        $this->httpStatusCode = $httpStatusCode;
+
         if ($response instanceof ResponseInterface) {
             $this->attributes = self::parse($response);
         } else {
@@ -28,7 +44,10 @@ class ZatcaResponse implements ZatcaResponseInterface
         }
     }
 
-    public function raw(): ResponseInterface|array
+    /**
+     * @return array|ResponseInterface
+     */
+    public function raw()
     {
         return $this->response;
     }
@@ -69,6 +88,15 @@ class ZatcaResponse implements ZatcaResponseInterface
 
     public function unauthorized(): bool
     {
+        if ($this->getHttpStatusCode() === 401) {
+            return true;
+        }
+
         return $this->getOptionalAttribute('status') === 401;
+    }
+
+    public function getHttpStatusCode(): ?int
+    {
+        return $this->httpStatusCode;
     }
 }

@@ -4,6 +4,10 @@ namespace Sevaske\ZatcaApi;
 
 class AuthToken
 {
+    protected string $certificate;
+
+    protected string $secret;
+
     // Stores the encoded authorization token
     private string $token;
 
@@ -14,8 +18,11 @@ class AuthToken
      * @param  string  $certificate  - The certificate string
      * @param  string  $secret  - The secret key
      */
-    public function __construct(protected string $certificate, protected string $secret)
+    public function __construct(string $certificate, string $secret)
     {
+        $this->secret = $secret;
+        $this->certificate = $certificate;
+
         // Trim inputs, double base64 encode the certificate,
         // concatenate with secret separated by ':', then base64 encode the whole string
         $this->token = base64_encode(base64_encode(trim($certificate)).':'.trim($secret));

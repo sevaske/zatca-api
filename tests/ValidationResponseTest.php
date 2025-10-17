@@ -1,6 +1,6 @@
 <?php
 
-namespace Sevaske\ZatcaApi\Tests;
+namespace Tests;
 
 use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Psr7\Utils;
