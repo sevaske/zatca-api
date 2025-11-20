@@ -2,43 +2,60 @@
 
 namespace Sevaske\ZatcaApi;
 
-class AuthToken
+use Sevaske\ZatcaApi\Interfaces\AuthTokenInterface;
+
+/**
+ * Represents a ZATCA Basic Authentication token.
+ *
+ * The token is generated from a certificate and a secret key,
+ * using the following format:
+ *
+ *     base64( base64(certificate) : secret )
+ *
+ * This token can then be used as a Basic Authorization header value.
+ */
+class AuthToken implements AuthTokenInterface
 {
+    /**
+     * The original certificate string.
+     */
     protected string $certificate;
 
+    /**
+     * The secret key associated with the certificate.
+     */
     protected string $secret;
 
-    // Stores the encoded authorization token
+    /**
+     * The encoded authorization token.
+     */
     private string $token;
 
     /**
-     * Constructor accepts a certificate and a secret,
-     * then generates a token in the format base64(base64(certificate):secret)
+     * Creates a new AuthToken instance.
      *
-     * @param  string  $certificate  - The certificate string
-     * @param  string  $secret  - The secret key
+     * @param string $certificate  The certificate (typically PEM or raw string)
+     * @param string $secret       The secret key provided by ZATCA
      */
     public function __construct(string $certificate, string $secret)
     {
-        $this->secret = $secret;
-        $this->certificate = $certificate;
+        $this->certificate = trim($certificate);
+        $this->secret = trim($secret);
 
-        // Trim inputs, double base64 encode the certificate,
-        // concatenate with secret separated by ':', then base64 encode the whole string
-        $this->token = base64_encode(base64_encode(trim($certificate)).':'.trim($secret));
+        // Generate token in the format base64( base64(certificate) : secret )
+        $this->token = base64_encode(base64_encode($this->certificate) . ':' . $this->secret);
     }
 
     /**
-     * Magic method to convert the object to a string.
-     * Allows the object to be used in string context, e.g. echo or concatenation.
+     * Returns the raw encoded token (without "Basic " prefix).
      */
-    public function __toString(): string
+    public function token(): string
     {
         return $this->token;
     }
 
     /**
-     * Generates the HTTP Authorization header value in the format "Basic {token}".
+     * Returns the token in HTTP Basic Authorization format: "Basic {token}".
      */
     public function toBasic(): string
     {
@@ -46,13 +63,21 @@ class AuthToken
     }
 
     /**
-     * Returns an associative array representing HTTP headers,
-     * with the 'Authorization' header set to the Basic auth string.
+     * Returns an associative array suitable for use in HTTP headers.
+     *
+     * Example:
+     *     ['Authorization' => 'Basic <token>']
      */
     public function toHeader(): array
     {
-        return [
-            'Authorization' => $this->toBasic(),
-        ];
+        return ['Authorization' => $this->toBasic()];
+    }
+
+    /**
+     * Returns the token string when the object is used in a string context.
+     */
+    public function __toString(): string
+    {
+        return $this->token;
     }
 }
