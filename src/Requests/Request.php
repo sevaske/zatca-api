@@ -2,9 +2,9 @@
 
 namespace Sevaske\ZatcaApi\Requests;
 
-use Sevaske\ZatcaApi\Interfaces\RequestBuilderInterface;
+use Sevaske\ZatcaApi\Interfaces\RequestInterface;
 
-class RequestBuilder implements RequestBuilderInterface
+class Request implements RequestInterface
 {
     protected string $uri;
 
