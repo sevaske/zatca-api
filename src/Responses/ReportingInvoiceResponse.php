@@ -8,7 +8,7 @@ namespace Sevaske\ZatcaApi\Responses;
  * Represents a response from the ZATCA reporting API.
  * Provides convenient methods to access status, validation results, warnings, and errors.
  */
-class ReportingResponse extends ValidationResponse
+class ReportingInvoiceResponse extends ValidationResponse
 {
     /**
      * Determines whether the reporting was successful.

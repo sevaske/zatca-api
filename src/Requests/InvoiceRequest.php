@@ -7,9 +7,11 @@ abstract class InvoiceRequest extends Request
     public function __construct(string $invoice, ?string $invoiceHash, string $uuid)
     {
         parent::__construct($this->uri(), [
-            'invoice' => base64_encode($invoice),
-            'hash' => $this->normalizeInvoiceHash($invoiceHash),
-            'uuid' => $uuid,
+            'body' => [
+                'invoice' => base64_encode($invoice),
+                'hash' => $this->normalizeInvoiceHash($invoiceHash),
+                'uuid' => $uuid,
+            ]
         ]);
     }
 

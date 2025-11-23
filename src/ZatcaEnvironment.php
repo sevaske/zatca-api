@@ -1,6 +1,6 @@
 <?php
 
-namespace Sevaske\ZatcaApi\Enums;
+namespace Sevaske\ZatcaApi;
 
 use InvalidArgumentException;
 
@@ -26,7 +26,7 @@ class ZatcaEnvironment
     public function __construct(string $environment)
     {
         // Validate that the provided environment is one of the allowed values
-        if (!in_array($environment, self::values(), true)) {
+        if (! in_array($environment, self::values(), true)) {
             throw new InvalidArgumentException('Invalid environment');
         }
 
@@ -51,6 +51,11 @@ class ZatcaEnvironment
                 // Fallback, should never happen due to constructor validation
                 return '';
         }
+    }
+
+    public function __toString(): string
+    {
+        return $this->environment;
     }
 
     /**

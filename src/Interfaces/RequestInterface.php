@@ -2,7 +2,7 @@
 
 namespace Sevaske\ZatcaApi\Interfaces;
 
-interface RequestBuilderInterface
+interface RequestInterface
 {
     public function uri(): string;
 

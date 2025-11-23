@@ -8,46 +8,26 @@ use Sevaske\ZatcaApi\Exceptions\ZatcaException;
 use Sevaske\ZatcaApi\Exceptions\ZatcaResponseException;
 use Sevaske\ZatcaApi\Interfaces\ZatcaResponseInterface;
 
-class ZatcaResponse implements ZatcaResponseInterface
+abstract class ZatcaResponse implements ZatcaResponseInterface
 {
     use HasAttributes;
 
-    /**
-     * @var ResponseInterface|array
-     */
-    protected $response;
-
-    protected ?int $httpStatusCode = null;
+    protected ResponseInterface $response;
 
     /**
      * Constructs the ApiResponse object by parsing a PSR-7 response into attributes.
      *
-     * @param  ResponseInterface|array  $response  The original PSR-7 HTTP response OR array.
-     * @param  int|null  $httpStatusCode  The HTTP status (optional).
+     * @param  ResponseInterface  $response  The original PSR-7 HTTP response OR array.
      *
      * @throws ZatcaException If the response body cannot be parsed as valid JSON.
      */
-    public function __construct($response, ?int $httpStatusCode = null)
+    public function __construct(ResponseInterface $response)
     {
         $this->response = $response;
-
-        if ($httpStatusCode === null && $response instanceof ResponseInterface) {
-            $httpStatusCode = $response->getStatusCode();
-        }
-
-        $this->httpStatusCode = $httpStatusCode;
-
-        if ($response instanceof ResponseInterface) {
-            $this->attributes = self::parse($response);
-        } else {
-            $this->attributes = $this->response;
-        }
+        $this->attributes = self::parse($response);
     }
 
-    /**
-     * @return array|ResponseInterface
-     */
-    public function raw()
+    public function raw(): ResponseInterface
     {
         return $this->response;
     }
@@ -88,15 +68,10 @@ class ZatcaResponse implements ZatcaResponseInterface
 
     public function unauthorized(): bool
     {
-        if ($this->getHttpStatusCode() === 401) {
+        if ($this->response->getStatusCode() === 401) {
             return true;
         }
 
         return $this->getOptionalAttribute('status') === 401;
-    }
-
-    public function getHttpStatusCode(): ?int
-    {
-        return $this->httpStatusCode;
     }
 }

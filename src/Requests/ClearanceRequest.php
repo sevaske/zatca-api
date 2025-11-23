@@ -2,7 +2,7 @@
 
 namespace Sevaske\ZatcaApi\Requests;
 
-use Sevaske\ZatcaApi\Enums\ZatcaEndpointEnum;
+use Sevaske\ZatcaApi\ZatcaEndpointEnum;
 
 class ClearanceRequest extends InvoiceRequest
 {

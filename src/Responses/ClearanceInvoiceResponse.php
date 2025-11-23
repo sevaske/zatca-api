@@ -2,7 +2,7 @@
 
 namespace Sevaske\ZatcaApi\Responses;
 
-class ClearanceResponse extends ValidationResponse
+class ClearanceInvoiceResponse extends ValidationResponse
 {
     /**
      * Determines whether the clearance was successful.

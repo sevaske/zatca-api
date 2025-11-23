@@ -2,7 +2,7 @@
 
 namespace Sevaske\ZatcaApi\Responses;
 
-class ComplianceResponse extends ValidationResponse
+class ComplianceInvoiceResponse extends ValidationResponse
 {
     public function status(): ?string
     {
