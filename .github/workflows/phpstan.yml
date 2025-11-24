@@ -3,29 +3,33 @@ name: PHPStan
 on:
   push:
     paths:
-      - '**.php'
-      - 'phpstan.dist'
+      - '**/*.php'
+      - 'phpstan.neon'
+      - 'phpstan.neon.dist'
       - '.github/workflows/phpstan.yml'
+  pull_request:
 
 jobs:
   phpstan:
-    name: phpstan
+    name: PHPStan Analysis
     runs-on: ubuntu-latest
     timeout-minutes: 5
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
 
-      - name: Setup PHP
+      - name: Setup PHP 7.4
         uses: shivammathur/setup-php@v2
         with:
           php-version: '7.4'
           coverage: none
+          extensions: json, mbstring
 
       - name: Install composer dependencies
         uses: ramsey/composer-install@v3
+        with:
+          dependency-versions: prefer-stable
 
       - name: Run PHPStan
-        run: ./vendor/bin/phpstan analyze src tests --error-format=github
+        run: vendor/bin/phpstan analyse src tests --error-format=github
