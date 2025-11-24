@@ -2,7 +2,7 @@
 
 namespace Sevaske\ZatcaApi;
 
-class ZatcaEndpointEnum: string
+class ZatcaEndpoint: string
 {
     public const REPORTING = '/invoices/reporting/single';
 

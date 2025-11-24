@@ -2,7 +2,9 @@
 
 namespace Sevaske\ZatcaApi\Requests;
 
-abstract class InvoiceRequest extends Request
+use Sevaske\ZatcaApi\Interfaces\RequiresAuthTokenInterface;
+
+abstract class InvoiceRequest extends Request implements RequiresAuthTokenInterface
 {
     public function __construct(string $invoice, ?string $invoiceHash, string $uuid)
     {

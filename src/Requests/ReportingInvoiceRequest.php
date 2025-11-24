@@ -4,10 +4,10 @@ namespace Sevaske\ZatcaApi\Requests;
 
 use Sevaske\ZatcaApi\ZatcaEndpoint;
 
-class ComplianceInvoiceRequest extends InvoiceRequest
+class ReportingInvoiceRequest extends InvoiceRequest
 {
     public function uri(): string
     {
-        return ZatcaEndpoint::COMPLIANCE_INVOICE;
+        return ZatcaEndpoint::REPORTING;
     }
 }

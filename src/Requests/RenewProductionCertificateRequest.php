@@ -2,12 +2,12 @@
 
 namespace Sevaske\ZatcaApi\Requests;
 
-use Sevaske\ZatcaApi\ZatcaEndpointEnum;
+use Sevaske\ZatcaApi\ZatcaEndpoint;
 
 class RenewProductionCertificateRequest extends CertificateRequest
 {
     public function uri(): string
     {
-        return ZatcaEndpointEnum::PRODUCTION_CERTIFICATE;
+        return ZatcaEndpoint::PRODUCTION_CERTIFICATE;
     }
 }

@@ -2,12 +2,12 @@
 
 namespace Sevaske\ZatcaApi\Requests;
 
-use Sevaske\ZatcaApi\ZatcaEndpointEnum;
+use Sevaske\ZatcaApi\ZatcaEndpoint;
 
 class ComplianceCertificateRequest extends CertificateRequest
 {
     public function uri(): string
     {
-        return ZatcaEndpointEnum::COMPLIANCE_CERTIFICATE;
+        return ZatcaEndpoint::COMPLIANCE_CERTIFICATE;
     }
 }

@@ -2,13 +2,14 @@
 
 namespace Sevaske\ZatcaApi\Requests;
 
-use Sevaske\ZatcaApi\ZatcaEndpointEnum;
+use Sevaske\ZatcaApi\Interfaces\RequiresAuthTokenInterface;
+use Sevaske\ZatcaApi\ZatcaEndpoint;
 
-class ProductionCertificateRequest extends Request
+class ProductionCertificateRequest extends Request implements RequiresAuthTokenInterface
 {
     public function __construct(string $complianceRequestId)
     {
-        parent::__construct(ZatcaEndpointEnum::PRODUCTION_CERTIFICATE, [
+        parent::__construct(ZatcaEndpoint::PRODUCTION_CERTIFICATE, [
             'body' => [
                 'compliance_request_id' => $complianceRequestId,
             ],

@@ -4,7 +4,6 @@ namespace Sevaske\ZatcaApi\Responses;
 
 use Psr\Http\Message\ResponseInterface;
 use Sevaske\Support\Traits\HasAttributes;
-use Sevaske\ZatcaApi\Exceptions\ZatcaException;
 use Sevaske\ZatcaApi\Exceptions\ZatcaResponseException;
 use Sevaske\ZatcaApi\Interfaces\ZatcaResponseInterface;
 
@@ -19,7 +18,7 @@ abstract class ZatcaResponse implements ZatcaResponseInterface
      *
      * @param  ResponseInterface  $response  The original PSR-7 HTTP response OR array.
      *
-     * @throws ZatcaException If the response body cannot be parsed as valid JSON.
+     * @throws ZatcaResponseException If the response body cannot be parsed as valid JSON.
      */
     public function __construct(ResponseInterface $response)
     {
