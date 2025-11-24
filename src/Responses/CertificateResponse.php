@@ -10,12 +10,12 @@ class CertificateResponse extends ZatcaResponse
         return $this->getOptionalAttribute('dispositionMessage') === 'ISSUED';
     }
 
-    public function requestId(): mixed
+    public function requestId(): ?string
     {
         return $this->getOptionalAttribute('requestID');
     }
 
-    public function secret(): string
+    public function secret(): ?string
     {
         return $this->getOptionalAttribute('secret');
     }
@@ -25,7 +25,7 @@ class CertificateResponse extends ZatcaResponse
         return $this->getOptionalAttribute('binarySecurityToken');
     }
 
-    public function certificate(): string
+    public function certificate(): ?string
     {
         return (string) base64_decode((string) $this->binarySecurityToken());
     }

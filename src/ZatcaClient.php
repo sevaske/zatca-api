@@ -151,7 +151,7 @@ class ZatcaClient
                 ->through($this->middleware)
                 ->then(fn($req) => $this->client->sendRequest($req));
         } catch (ClientExceptionInterface|Throwable $e) {
-            throw (new ZatcaRequestException($e, [],$e->getCode(), $e))
+            throw (new ZatcaRequestException($e->getMessage(), [],$e->getCode(), $e))
                 ->withContext([
                     'uri' => $request->getUri(),
                     'body' => $request->getBody(),
