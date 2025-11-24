@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Sevaske\ZatcaApi\Middleware;
 
@@ -19,7 +20,7 @@ class Pipeline
     /**
      * Set the object/value to pass through the pipeline.
      *
-     * @return static
+     * @return $this
      */
     public function send($passable)
     {
@@ -31,7 +32,7 @@ class Pipeline
     /**
      * Set the array of middleware pipes.
      *
-     * @return static
+     * @return $this
      */
     public function through(array $pipes)
     {
@@ -43,7 +44,7 @@ class Pipeline
     /**
      * Set the method to call on object pipes.
      *
-     * @return static
+     * @return $this
      */
     public function via(string $method)
     {
@@ -55,7 +56,7 @@ class Pipeline
     /**
      * Run the pipeline with a final destination callback.
      *
-     * @return static
+     * @return $this
      * @throws Throwable
      */
     public function then(Closure $destination)

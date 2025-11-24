@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Sevaske\ZatcaApi;
 
@@ -11,7 +12,9 @@ use Psr\Http\Message\StreamFactoryInterface;
 use Sevaske\ZatcaApi\Exceptions\ZatcaException;
 use Sevaske\ZatcaApi\Exceptions\ZatcaRequestException;
 use Sevaske\ZatcaApi\Exceptions\ZatcaResponseException;
+use Sevaske\ZatcaApi\Interfaces\AuthTokenInterface;
 use Sevaske\ZatcaApi\Interfaces\RequestInterface as ZatcaRequestInterface;
+use Sevaske\ZatcaApi\Interfaces\RequiresAuthTokenInterface;
 use Sevaske\ZatcaApi\Requests\ClearanceInvoiceRequest;
 use Sevaske\ZatcaApi\Requests\ComplianceCertificateRequest;
 use Sevaske\ZatcaApi\Requests\ComplianceInvoiceRequest;
@@ -20,6 +23,7 @@ use Sevaske\ZatcaApi\Responses\ClearanceInvoiceResponse;
 use Sevaske\ZatcaApi\Responses\ComplianceCertificateResponse;
 use Sevaske\ZatcaApi\Responses\ComplianceInvoiceResponse;
 use Sevaske\ZatcaApi\Responses\ReportingInvoiceResponse;
+use Sevaske\ZatcaApi\Traits\HasAuthToken;
 use Sevaske\ZatcaApi\Traits\HasMiddleware;
 use Sevaske\ZatcaApi\Traits\Http;
 use Throwable;
@@ -27,6 +31,7 @@ use Throwable;
 class ZatcaClient
 {
     use Http;
+    use HasAuthToken;
     use HasMiddleware;
 
     private ZatcaEnvironment $environment;
@@ -66,7 +71,7 @@ class ZatcaClient
      */
     public function clearanceInvoice(string $invoice, ?string $invoiceHash, string $uuid): ClearanceInvoiceResponse
     {
-        $request = $this->prepareZatcaRequest(new ClearanceInvoiceRequest($invoice, $invoiceHash, $uuid));
+        $request = $this->buildRequest(new ClearanceInvoiceRequest($invoice, $invoiceHash, $uuid));
 
         return new ClearanceInvoiceResponse($this->sendRequest($request));
     }
@@ -77,7 +82,7 @@ class ZatcaClient
      */
     public function reportingInvoice(string $invoice, ?string $invoiceHash, string $uuid): ReportingInvoiceResponse
     {
-        $request = $this->prepareZatcaRequest(new ReportingInvoiceRequest($invoice, $invoiceHash, $uuid));
+        $request = $this->buildRequest(new ReportingInvoiceRequest($invoice, $invoiceHash, $uuid));
 
         return new ReportingInvoiceResponse($this->sendRequest($request));
     }
@@ -88,7 +93,7 @@ class ZatcaClient
      */
     public function complianceInvoice(string $invoice, ?string $invoiceHash, string $uuid): ComplianceInvoiceResponse
     {
-        $request = $this->prepareZatcaRequest(new ComplianceInvoiceRequest($invoice, $invoiceHash, $uuid));
+        $request = $this->buildRequest(new ComplianceInvoiceRequest($invoice, $invoiceHash, $uuid));
 
         return new ComplianceInvoiceResponse($this->sendRequest($request));
     }
@@ -99,17 +104,37 @@ class ZatcaClient
      */
     public function complianceCertification(string $csr, string $otp): ComplianceCertificateResponse
     {
-        $request = $this->prepareZatcaRequest(new ComplianceCertificateRequest($csr, $otp));
+        $request = $this->buildRequest(new ComplianceCertificateRequest($csr, $otp));
 
         return new ComplianceCertificateResponse($this->sendRequest($request));
     }
 
     /**
+     * Build a PSR-7 request from a ZatcaRequestInterface instance.
+     *
+     * Adds an Authorization header if the request requires an auth token.
+     *
+     * @param ZatcaRequestInterface $request
+     * @return RequestInterface
      * @throws ZatcaRequestException
      */
-    private function prepareZatcaRequest(ZatcaRequestInterface $request): RequestInterface
+    private function buildRequest(ZatcaRequestInterface $request): RequestInterface
     {
-        return $this->prepareRequest($request->method(), $request->uri(), $request->options());
+        $options = $request->options();
+
+        // if the request requires an auth token and Authorization header is not already set
+        if (($request instanceof RequiresAuthTokenInterface) && ! isset($options['headers']['Authorization'])) {
+            if (! $this->authToken instanceof AuthTokenInterface) {
+                throw new ZatcaRequestException('Auth token required.', [
+                        'uri' => $request->uri(),
+                        'options' => $request->options(),
+                ]);
+            }
+
+            $options['headers']['Authorization'] = 'Basic ' . $this->authToken->token();
+        }
+
+        return $this->prepareRequest($request->method(), $request->uri(), $options);
     }
 
     /**

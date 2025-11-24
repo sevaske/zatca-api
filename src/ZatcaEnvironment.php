@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Sevaske\ZatcaApi;
 
@@ -75,9 +76,9 @@ class ZatcaEnvironment
     /**
      * Factory method for SANDBOX environment
      *
-     * @return self
+     * @return $this
      */
-    public static function sandbox(): self
+    public static function sandbox()
     {
         return new self(self::SANDBOX);
     }
@@ -85,9 +86,9 @@ class ZatcaEnvironment
     /**
      * Factory method for SIMULATION environment
      *
-     * @return self
+     * @return $this
      */
-    public static function simulation(): self
+    public static function simulation()
     {
         return new self(self::SIMULATION);
     }
@@ -95,9 +96,9 @@ class ZatcaEnvironment
     /**
      * Factory method for PRODUCTION environment
      *
-     * @return self
+     * @return $this
      */
-    public static function production(): self
+    public static function production()
     {
         return new self(self::PRODUCTION);
     }
