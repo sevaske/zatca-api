@@ -18,10 +18,12 @@ use Sevaske\ZatcaApi\Interfaces\RequiresAuthTokenInterface;
 use Sevaske\ZatcaApi\Requests\ClearanceInvoiceRequest;
 use Sevaske\ZatcaApi\Requests\ComplianceCertificateRequest;
 use Sevaske\ZatcaApi\Requests\ComplianceInvoiceRequest;
+use Sevaske\ZatcaApi\Requests\ProductionCertificateRequest;
 use Sevaske\ZatcaApi\Requests\ReportingInvoiceRequest;
 use Sevaske\ZatcaApi\Responses\ClearanceInvoiceResponse;
 use Sevaske\ZatcaApi\Responses\ComplianceCertificateResponse;
 use Sevaske\ZatcaApi\Responses\ComplianceInvoiceResponse;
+use Sevaske\ZatcaApi\Responses\ProductionCertificateResponse;
 use Sevaske\ZatcaApi\Responses\ReportingInvoiceResponse;
 use Sevaske\ZatcaApi\Traits\HasAuthToken;
 use Sevaske\ZatcaApi\Traits\HasMiddleware;
@@ -107,6 +109,17 @@ class ZatcaClient
         $request = $this->buildRequest(new ComplianceCertificateRequest($csr, $otp));
 
         return new ComplianceCertificateResponse($this->sendRequest($request));
+    }
+
+    /**
+     * @throws ZatcaResponseException
+     * @throws ZatcaRequestException
+     */
+    public function productionCertificate(string $complianceRequestId): ProductionCertificateResponse
+    {
+        $request = $this->buildRequest(new ProductionCertificateRequest($complianceRequestId));
+
+        return new ProductionCertificateResponse($this->sendRequest($request));
     }
 
     /**

@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Sevaske\ZatcaApi;
 
-class ZatcaEndpoint: string
+class ZatcaEndpoint
 {
     public const REPORTING = '/invoices/reporting/single';
 

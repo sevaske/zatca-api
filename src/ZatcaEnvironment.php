@@ -72,34 +72,4 @@ class ZatcaEnvironment
             self::PRODUCTION,
         ];
     }
-
-    /**
-     * Factory method for SANDBOX environment
-     *
-     * @return $this
-     */
-    public static function sandbox()
-    {
-        return new self(self::SANDBOX);
-    }
-
-    /**
-     * Factory method for SIMULATION environment
-     *
-     * @return $this
-     */
-    public static function simulation()
-    {
-        return new self(self::SIMULATION);
-    }
-
-    /**
-     * Factory method for PRODUCTION environment
-     *
-     * @return $this
-     */
-    public static function production()
-    {
-        return new self(self::PRODUCTION);
-    }
 }

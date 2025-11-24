@@ -14,7 +14,7 @@ trait HasMiddleware
      * Attach one or multiple middleware objects.
      *
      * @param MiddlewareInterface|MiddlewareInterface[] $middleware
-     * @return $this
+     * @return static
      */
     public function withMiddleware($middleware)
     {
