@@ -22,7 +22,7 @@ class ValidationResponse extends ZatcaResponse
      */
     public function validationStatus(): ?string
     {
-        return $this->validation()['status'];
+        return $this->validation()['status'] ?? null;
     }
 
     /**

@@ -65,13 +65,4 @@ abstract class ZatcaResponse implements ZatcaResponseInterface
 
         return (array) $parsed;
     }
-
-    public function unauthorized(): bool
-    {
-        if ($this->response->getStatusCode() === 401) {
-            return true;
-        }
-
-        return $this->getOptionalAttribute('status') === 401;
-    }
 }

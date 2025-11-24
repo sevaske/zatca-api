@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Tests;
 
@@ -11,6 +12,13 @@ use Sevaske\ZatcaApi\Responses\ValidationResponse;
 
 class ValidationResponseTest extends TestCase
 {
+    /**
+     * Create a PSR-7 JSON response for testing.
+     *
+     * @param array $data
+     * @param int $status
+     * @return ResponseInterface
+     */
     protected function makeJsonResponse(array $data, int $status = 200): ResponseInterface
     {
         return new Response(
@@ -62,38 +70,5 @@ class ValidationResponseTest extends TestCase
         $response = new Response(200, ['Content-Type' => 'application/json'], Utils::streamFor($invalidJson));
 
         new ValidationResponse($response);
-    }
-
-    public function test_it_accepts_array_response(): void
-    {
-        $response = new ValidationResponse([
-            'validationResults' => [
-                'status' => 'SUCCESS',
-                'infoMessages' => [],
-                'warningMessages' => [],
-                'errorMessages' => [],
-            ],
-        ]);
-
-        $this->assertIsArray($response->validation());
-        $this->assertEquals('SUCCESS', $response->validationStatus());
-    }
-
-    public function test_it_detects_unauthorized_status(): void
-    {
-        $response = new ValidationResponse([
-            'status' => 401,
-            'validationResults' => [],
-        ]);
-
-        $this->assertTrue($response->unauthorized());
-    }
-
-    public function test_raw_method_returns_original_response(): void
-    {
-        $arrayData = ['foo' => 'bar'];
-        $response = new ValidationResponse($arrayData);
-
-        $this->assertSame($arrayData, $response->raw());
     }
 }
