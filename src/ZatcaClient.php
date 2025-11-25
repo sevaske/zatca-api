@@ -15,6 +15,8 @@ use Sevaske\ZatcaApi\Exceptions\ZatcaResponseException;
 use Sevaske\ZatcaApi\Interfaces\AuthTokenInterface;
 use Sevaske\ZatcaApi\Interfaces\RequestInterface as ZatcaRequestInterface;
 use Sevaske\ZatcaApi\Interfaces\RequiresAuthTokenInterface;
+use Sevaske\ZatcaApi\Interfaces\ZatcaEnvironmentInterface;
+use Sevaske\ZatcaApi\Middleware\Pipeline;
 use Sevaske\ZatcaApi\Requests\ClearanceInvoiceRequest;
 use Sevaske\ZatcaApi\Requests\ComplianceCertificateRequest;
 use Sevaske\ZatcaApi\Requests\ComplianceInvoiceRequest;
@@ -36,13 +38,13 @@ class ZatcaClient
     use HasAuthToken;
     use HasMiddleware;
 
-    private ZatcaEnvironment $environment;
+    protected ZatcaEnvironmentInterface $environment;
 
     /**
      * @param string|ZatcaEndpoint $environment
-     * @param ClientInterface $client
-     * @param RequestFactoryInterface $requestFactory
-     * @param StreamFactoryInterface $streamFactory
+     * @param ClientInterface $client PSR-18 HTTP client
+     * @param RequestFactoryInterface $requestFactory PSR-17 request factory
+     * @param StreamFactoryInterface $streamFactory PSR-17 stream factory
      */
     public function __construct(
         $environment,
@@ -51,27 +53,51 @@ class ZatcaClient
         StreamFactoryInterface $streamFactory
     )
     {
-        if ($environment instanceof ZatcaEnvironment) {
-            $this->environment = $environment;
-        } else {
-            $this->environment = new ZatcaEnvironment((string) $environment);
-        }
-
         $this->client = $client;
         $this->requestFactory = $requestFactory;
         $this->streamFactory = $streamFactory;
+
+        $this->environment = $this->resolveEnvironment($environment);
     }
 
-    public function environment(): ZatcaEnvironment
+    /**
+     * Returns a new client with a different environment.
+     * Auth token is reset to prevent token leakage.
+     *
+     * @param string|ZatcaEnvironmentInterface $environment New environment
+     * @return static Immutable clone with updated environment
+     */
+    public function withEnvironment($environment)
+    {
+        $clone = clone $this;
+        $clone->resolveEnvironment($environment);
+        // reset token
+        $clone->authToken = null;
+
+        return $clone;
+    }
+
+    /**
+     * Returns the current environment instance.
+     *
+     * @return ZatcaEnvironmentInterface
+     */
+    public function environment(): ZatcaEnvironmentInterface
     {
         return $this->environment;
     }
 
     /**
-     * @throws ZatcaResponseException
-     * @throws ZatcaRequestException
+     * Clearance invoice (B2B).
+     *
+     * @param string $invoice JSON/XML invoice content
+     * @param string $invoiceHash Invoice hash
+     * @param string $uuid Unique request identifier
+     * @return ClearanceInvoiceResponse
+     * @throws ZatcaResponseException On invalid response
+     * @throws ZatcaRequestException On request error
      */
-    public function clearanceInvoice(string $invoice, ?string $invoiceHash, string $uuid): ClearanceInvoiceResponse
+    public function clearanceInvoice(string $invoice, string $invoiceHash, string $uuid): ClearanceInvoiceResponse
     {
         $request = $this->buildRequest(new ClearanceInvoiceRequest($invoice, $invoiceHash, $uuid));
 
@@ -79,10 +105,16 @@ class ZatcaClient
     }
 
     /**
-     * @throws ZatcaResponseException
-     * @throws ZatcaRequestException
+     * Reporting invoice (B2C).
+     *
+     * @param string $invoice JSON/XML invoice content
+     * @param string $invoiceHash Invoice hash
+     * @param string $uuid Unique request identifier
+     * @return ReportingInvoiceResponse
+     * @throws ZatcaResponseException On invalid response
+     * @throws ZatcaRequestException On request error
      */
-    public function reportingInvoice(string $invoice, ?string $invoiceHash, string $uuid): ReportingInvoiceResponse
+    public function reportingInvoice(string $invoice, string $invoiceHash, string $uuid): ReportingInvoiceResponse
     {
         $request = $this->buildRequest(new ReportingInvoiceRequest($invoice, $invoiceHash, $uuid));
 
@@ -90,10 +122,16 @@ class ZatcaClient
     }
 
     /**
-     * @throws ZatcaException
-     * @throws ZatcaRequestException
+     * Compliance invoice.
+     *
+     * @param string $invoice JSON/XML invoice content
+     * @param string $invoiceHash Invoice hash
+     * @param string $uuid Unique request identifier
+     * @return ComplianceInvoiceResponse
+     * @throws ZatcaResponseException On invalid response
+     * @throws ZatcaRequestException On request error
      */
-    public function complianceInvoice(string $invoice, ?string $invoiceHash, string $uuid): ComplianceInvoiceResponse
+    public function complianceInvoice(string $invoice, string $invoiceHash, string $uuid): ComplianceInvoiceResponse
     {
         $request = $this->buildRequest(new ComplianceInvoiceRequest($invoice, $invoiceHash, $uuid));
 
@@ -101,6 +139,11 @@ class ZatcaClient
     }
 
     /**
+     * Request a compliance certificate.
+     *
+     * @param string $csr Certificate signing request
+     * @param string $otp One-time password for validation
+     * @return ComplianceCertificateResponse
      * @throws ZatcaRequestException
      * @throws ZatcaResponseException
      */
@@ -112,6 +155,10 @@ class ZatcaClient
     }
 
     /**
+     * Request a production certificate based on a compliance request ID.
+     *
+     * @param string $complianceRequestId ID returned from compliance request
+     * @return ProductionCertificateResponse
      * @throws ZatcaResponseException
      * @throws ZatcaRequestException
      */
@@ -124,42 +171,37 @@ class ZatcaClient
 
     /**
      * Build a PSR-7 request from a ZatcaRequestInterface instance.
+     * Adds authorization header if required by the request.
      *
-     * Adds an Authorization header if the request requires an auth token.
-     *
-     * @param ZatcaRequestInterface $request
-     * @return RequestInterface
-     * @throws ZatcaRequestException
+     * @param ZatcaRequestInterface $request Request abstraction
+     * @return RequestInterface Prepared PSR-7 request
+     * @throws ZatcaRequestException When auth token is missing
      */
-    private function buildRequest(ZatcaRequestInterface $request): RequestInterface
+    protected function buildRequest(ZatcaRequestInterface $request): RequestInterface
     {
+        $url = $this->environment->url($request->uri());
         $options = $request->options();
 
         // if the request requires an auth token and Authorization header is not already set
         if (($request instanceof RequiresAuthTokenInterface) && ! isset($options['headers']['Authorization'])) {
-            if (! $this->authToken instanceof AuthTokenInterface) {
-                throw new ZatcaRequestException('Auth token required.', [
-                        'uri' => $request->uri(),
-                        'options' => $request->options(),
-                ]);
-            }
-
-            $options['headers']['Authorization'] = 'Basic ' . $this->authToken->token();
+            $options = $this->attachAuthHeader($options);
         }
 
-        return $this->prepareRequest($request->method(), $request->uri(), $options);
+        return $this->prepareRequest($request->method(), $url, $options);
     }
 
     /**
-     * @param RequestInterface $request
+     * Send the PSR-7 request via the middleware pipeline.
+     * Catches HTTP and client exceptions and wraps them with context.
      *
-     * @return ResponseInterface
-     * @throws ZatcaRequestException
+     * @param RequestInterface $request
+     * @return ResponseInterface PSR-7 response
+     * @throws ZatcaRequestException On transport or client errors
      */
-    private function sendRequest(RequestInterface $request): ResponseInterface
+    protected function sendRequest(RequestInterface $request): ResponseInterface
     {
         try {
-            return (new \Sevaske\ZatcaApi\Middleware\Pipeline())
+            return (new Pipeline())
                 ->send($request)
                 ->through($this->middleware)
                 ->then(fn($req) => $this->client->sendRequest($req));
@@ -172,5 +214,35 @@ class ZatcaClient
                     'headers' => $request->getHeaders(),
                 ]);
         }
+    }
+
+
+    /**
+     * @throws ZatcaRequestException
+     */
+    protected function attachAuthHeader(array $options): array
+    {
+        if (! $this->authToken instanceof AuthTokenInterface) {
+            throw new ZatcaRequestException('Auth token is required.');
+        }
+
+        $options['headers']['Authorization'] = 'Basic ' . $this->authToken->token();
+
+        return $options;
+    }
+
+    /**
+     * Normalize or resolve environment input to a ZatcaEnvironmentInterface.
+     *
+     * @param string|ZatcaEnvironmentInterface $environment
+     * @return ZatcaEnvironmentInterface
+     */
+    protected function resolveEnvironment($environment): ZatcaEnvironmentInterface
+    {
+        if ($environment instanceof ZatcaEnvironmentInterface) {
+            return $environment;
+        }
+
+        return new ZatcaEnvironment((string) $environment);
     }
 }

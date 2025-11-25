@@ -13,7 +13,7 @@ trait HasAuthToken
      *
      * @return $this
      */
-    public function withAuthToken(?AuthTokenInterface $authToken)
+    public function setAuthToken(?AuthTokenInterface $authToken)
     {
         $this->authToken = $authToken;
 
