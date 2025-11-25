@@ -4,8 +4,9 @@ declare(strict_types=1);
 namespace Sevaske\ZatcaApi;
 
 use InvalidArgumentException;
+use Sevaske\ZatcaApi\Interfaces\ZatcaEnvironmentInterface;
 
-class ZatcaEnvironment
+class ZatcaEnvironment implements ZatcaEnvironmentInterface
 {
     public const SANDBOX = 'sandbox';
 
@@ -26,12 +27,17 @@ class ZatcaEnvironment
      */
     public function __construct(string $environment)
     {
-        // Validate that the provided environment is one of the allowed values
+        // validate that the provided environment is one of the allowed values
         if (! in_array($environment, self::values(), true)) {
-            throw new InvalidArgumentException('Invalid environment');
+            throw new InvalidArgumentException('Invalid environment: '.$environment);
         }
 
         $this->environment = $environment;
+    }
+
+    public function __toString(): string
+    {
+        return $this->environment;
     }
 
     /**
@@ -49,14 +55,19 @@ class ZatcaEnvironment
             case self::PRODUCTION:
                 return 'https://gw-fatoora.zatca.gov.sa/e-invoicing/core';
             default:
-                // Fallback, should never happen due to constructor validation
-                return '';
+                throw new InvalidArgumentException('Unknown environment.');
         }
     }
 
-    public function __toString(): string
+    public function url(string $uri): string
     {
-        return $this->environment;
+        // remove any leading slashes from the URI to avoid double slashes
+        $uri = ltrim($uri, '/');
+
+        // ensure base URL does not end with a slash
+        $base = rtrim($this->baseUrl(), '/');
+
+        return $base.'/'.$uri;
     }
 
     /**
