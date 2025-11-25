@@ -41,22 +41,21 @@ class ZatcaClient
     protected ZatcaEnvironmentInterface $environment;
 
     /**
-     * @param string|ZatcaEndpoint $environment
      * @param ClientInterface $client PSR-18 HTTP client
      * @param RequestFactoryInterface $requestFactory PSR-17 request factory
      * @param StreamFactoryInterface $streamFactory PSR-17 stream factory
+     * @param string|ZatcaEndpoint $environment
      */
     public function __construct(
-        $environment,
         ClientInterface $client,
         RequestFactoryInterface $requestFactory,
-        StreamFactoryInterface $streamFactory
+        StreamFactoryInterface $streamFactory,
+        $environment = 'sandbox'
     )
     {
         $this->client = $client;
         $this->requestFactory = $requestFactory;
         $this->streamFactory = $streamFactory;
-
         $this->environment = $this->resolveEnvironment($environment);
     }
 
