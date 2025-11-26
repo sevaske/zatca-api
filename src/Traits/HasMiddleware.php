@@ -9,12 +9,26 @@ use Sevaske\ZatcaApi\Interfaces\MiddlewareInterface;
 
 trait HasMiddleware
 {
-    /** @var MiddlewareInterface[] */
+    /** @var MiddlewareInterface[] List of attached middleware */
     protected array $middleware = [];
 
     /**
-     * Replace current middleware with one or multiple provided instances.
-     * This method mutates the current object.
+     * Add one or multiple middleware instances to the existing list.
+     *
+     * @param MiddlewareInterface|MiddlewareInterface[] $middleware
+     * @return static
+     */
+    public function attachMiddleware($middleware)
+    {
+        return $this->setMiddleware(array_merge(
+            $this->middleware,
+            $this->normalizeMiddleware($middleware))
+        );
+    }
+
+    /**
+     * Replace current middleware with provided instances.
+     * Mutates the current object.
      *
      * @param  MiddlewareInterface|MiddlewareInterface[]  $middleware
      * @return static
@@ -36,9 +50,19 @@ trait HasMiddleware
     public function withMiddleware($middleware)
     {
         $clone = clone $this;
-        $clone->middleware = array_merge($clone->middleware, $this->normalizeMiddleware($middleware));
+        $clone->setMiddleware($middleware);
 
         return $clone;
+    }
+
+    /**
+     * Return a new instance with no middleware attached.
+     *
+     * @return static
+     */
+    public function withoutMiddleware()
+    {
+        return $this->withMiddleware([]);
     }
 
     /**
@@ -56,6 +80,8 @@ trait HasMiddleware
      *
      * @param  MiddlewareInterface|MiddlewareInterface[]  $middleware
      * @return MiddlewareInterface[]
+     *
+     * @throws InvalidArgumentException If input is invalid
      */
     protected function normalizeMiddleware($middleware): array
     {
