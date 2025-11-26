@@ -16,7 +16,7 @@ use Sevaske\ZatcaApi\Interfaces\AuthTokenInterface;
  *
  * This token can then be used as a Basic Authorization header value.
  */
-class AuthToken implements AuthTokenInterface
+class ZatcaAuth implements AuthTokenInterface
 {
     /**
      * The original certificate string.

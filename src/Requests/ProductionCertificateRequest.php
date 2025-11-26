@@ -9,7 +9,7 @@ use Sevaske\ZatcaApi\ZatcaEndpoint;
 
 class ProductionCertificateRequest extends Request implements RequiresAuthTokenInterface
 {
-    public function __construct(string $complianceRequestId)
+    public function __construct(int $complianceRequestId)
     {
         parent::__construct(ZatcaEndpoint::PRODUCTION_CERTIFICATE, [
             'body' => [

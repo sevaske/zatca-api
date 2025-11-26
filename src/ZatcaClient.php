@@ -153,12 +153,12 @@ class ZatcaClient
     /**
      * Request a production certificate based on a compliance request ID.
      *
-     * @param  string  $complianceRequestId  ID returned from compliance request
+     * @param  int  $complianceRequestId  ID returned from compliance request
      *
      * @throws ZatcaResponseException
      * @throws ZatcaRequestException
      */
-    public function productionCertificate(string $complianceRequestId): ProductionCertificateResponse
+    public function productionCertificate(int $complianceRequestId): ProductionCertificateResponse
     {
         $request = $this->buildRequest(new ProductionCertificateRequest($complianceRequestId));
 

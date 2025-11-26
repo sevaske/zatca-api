@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests;
 
 use PHPUnit\Framework\TestCase;
-use Sevaske\ZatcaApi\AuthToken;
+use Sevaske\ZatcaApi\ZatcaAuth;
 
 final class AuthTokenTest extends TestCase
 {
@@ -13,11 +13,11 @@ final class AuthTokenTest extends TestCase
 
     private const SECRET = 'taina';
 
-    private AuthToken $authToken;
+    private ZatcaAuth $authToken;
 
     protected function setUp(): void
     {
-        $this->authToken = new AuthToken(self::CERTIFICATE, self::SECRET);
+        $this->authToken = new ZatcaAuth(self::CERTIFICATE, self::SECRET);
     }
 
     public function test_token_is_generated_according_to_spec(): void
@@ -59,7 +59,7 @@ final class AuthTokenTest extends TestCase
     {
         $certificate = '  '.self::CERTIFICATE.'  ';
         $secret = '  '.self::SECRET.'  ';
-        $authToken = new AuthToken($certificate, $secret);
+        $authToken = new ZatcaAuth($certificate, $secret);
 
         $expectedToken = base64_encode(base64_encode(trim($certificate)).':'.trim($secret));
         $this->assertSame($expectedToken, (string) $authToken, 'Constructor should trim inputs before encoding');
