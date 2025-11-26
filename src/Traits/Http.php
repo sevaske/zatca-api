@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Sevaske\ZatcaApi\Traits;
@@ -34,14 +35,13 @@ trait Http
      * headers, and body. This method is responsible for creating a valid
      * RequestInterface instance before sending it with the HTTP client.
      *
-     * @param string $method  The HTTP method (GET, POST, PUT, etc.)
-     * @param string $uri     The full URI or relative path
-     * @param array  $options Supported keys:
-     *                        - headers: array of HTTP headers
-     *                        - query:   array of query parameters
-     *                        - body:    string|array request body
+     * @param  string  $method  The HTTP method (GET, POST, PUT, etc.)
+     * @param  string  $uri  The full URI or relative path
+     * @param  array  $options  Supported keys:
+     *                          - headers: array of HTTP headers
+     *                          - query:   array of query parameters
+     *                          - body:    string|array request body
      *
-     * @return RequestInterface
      * @throws ZatcaRequestException if request creation fails
      */
     protected function prepareRequest(string $method, string $uri, array $options = []): RequestInterface

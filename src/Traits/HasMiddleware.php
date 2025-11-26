@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Sevaske\ZatcaApi\Traits;
@@ -13,7 +14,7 @@ trait HasMiddleware
     /**
      * Attach one or multiple middleware objects.
      *
-     * @param MiddlewareInterface|MiddlewareInterface[] $middleware
+     * @param  MiddlewareInterface|MiddlewareInterface[]  $middleware
      * @return static
      */
     public function withMiddleware($middleware)
@@ -25,9 +26,9 @@ trait HasMiddleware
 
         // validate each element
         foreach ($middleware as $m) {
-            if (!$m instanceof MiddlewareInterface) {
+            if (! $m instanceof MiddlewareInterface) {
                 throw new \InvalidArgumentException(
-                    'Middleware must implement ' . MiddlewareInterface::class
+                    'Middleware must implement '.MiddlewareInterface::class
                 );
             }
         }

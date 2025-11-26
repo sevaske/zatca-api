@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Sevaske\ZatcaApi;
@@ -35,8 +36,8 @@ class AuthToken implements AuthTokenInterface
     /**
      * Creates a new AuthToken instance.
      *
-     * @param string $certificate  The certificate (typically PEM or raw string)
-     * @param string $secret       The secret key provided by ZATCA
+     * @param  string  $certificate  The certificate (typically PEM or raw string)
+     * @param  string  $secret  The secret key provided by ZATCA
      */
     public function __construct(string $certificate, string $secret)
     {
@@ -44,7 +45,7 @@ class AuthToken implements AuthTokenInterface
         $this->secret = trim($secret);
 
         // Generate token in the format base64( base64(certificate) : secret )
-        $this->token = base64_encode(base64_encode($this->certificate) . ':' . $this->secret);
+        $this->token = base64_encode(base64_encode($this->certificate).':'.$this->secret);
     }
 
     /**

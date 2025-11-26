@@ -1,11 +1,12 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Tests;
 
 use PHPUnit\Framework\TestCase;
-use Sevaske\ZatcaApi\Responses\ReportingInvoiceResponse;
 use Sevaske\ZatcaApi\Responses\ComplianceInvoiceResponse;
+use Sevaske\ZatcaApi\Responses\ReportingInvoiceResponse;
 use Sevaske\ZatcaApi\Responses\ZatcaResponse;
 
 class ReportingResponseTest extends TestCase
@@ -13,13 +14,13 @@ class ReportingResponseTest extends TestCase
     /**
      * Helper to create a mock Response with given attributes.
      *
-     * @param array $attributes
      * @return ReportingInvoiceResponse|ComplianceInvoiceResponse|ZatcaResponse
      */
     protected function makeResponse(array $attributes): ZatcaResponse
     {
         // Here we just use the real Response class, assuming it accepts array in constructor
-        return new class($attributes) extends ReportingInvoiceResponse {
+        return new class($attributes) extends ReportingInvoiceResponse
+        {
             public function __construct(array $attributes)
             {
                 $this->attributes = $attributes;

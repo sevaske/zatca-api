@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Sevaske\ZatcaApi\Requests;
@@ -14,7 +15,7 @@ abstract class InvoiceRequest extends Request implements RequiresAuthTokenInterf
                 'invoice' => base64_encode($invoice),
                 'hash' => $invoiceHash,
                 'uuid' => $uuid,
-            ]
+            ],
         ]);
     }
 }

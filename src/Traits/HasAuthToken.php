@@ -9,8 +9,6 @@ trait HasAuthToken
     protected ?AuthTokenInterface $authToken;
 
     /**
-     * @param AuthTokenInterface|null $authToken
-     *
      * @return $this
      */
     public function setAuthToken(?AuthTokenInterface $authToken)

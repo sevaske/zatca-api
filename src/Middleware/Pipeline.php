@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Sevaske\ZatcaApi\Middleware;
@@ -49,6 +50,7 @@ class Pipeline
 
     /**
      * Run the pipeline with a final destination callback.
+     *
      * @throws Throwable
      */
     public function then(Closure $destination)
@@ -64,8 +66,6 @@ class Pipeline
 
     /**
      * Build a closure that wraps each pipe layer.
-     *
-     * @return Closure
      */
     protected function carry(): Closure
     {
@@ -83,7 +83,7 @@ class Pipeline
                     return $pipe($passable, $stack);
                 }
 
-                throw new \RuntimeException("Pipe must be a callable or an object.");
+                throw new \RuntimeException('Pipe must be a callable or an object.');
             };
         };
     }

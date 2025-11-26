@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Tests;
@@ -14,10 +15,6 @@ class ValidationResponseTest extends TestCase
 {
     /**
      * Create a PSR-7 JSON response for testing.
-     *
-     * @param array $data
-     * @param int $status
-     * @return ResponseInterface
      */
     protected function makeJsonResponse(array $data, int $status = 200): ResponseInterface
     {

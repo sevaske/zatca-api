@@ -28,7 +28,7 @@ interface ZatcaEnvironmentInterface
      * Automatically ensures exactly one slash between base URL and path.
      * Throws InvalidArgumentException if $uri is empty or invalid.
      *
-     * @param string $uri Relative path or endpoint (e.g. '/compliance/invoices')
+     * @param  string  $uri  Relative path or endpoint (e.g. '/compliance/invoices')
      * @return string Fully qualified URL (e.g. https://.../compliance/invoices)
      */
     public function url(string $uri): string;

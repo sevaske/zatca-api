@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Sevaske\ZatcaApi;
@@ -22,7 +23,8 @@ class ZatcaEnvironment implements ZatcaEnvironmentInterface
     /**
      * Constructor
      *
-     * @param string $environment One of the defined environment constants
+     * @param  string  $environment  One of the defined environment constants
+     *
      * @throws InvalidArgumentException if an invalid value is provided
      */
     public function __construct(string $environment)
