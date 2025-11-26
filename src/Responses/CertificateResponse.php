@@ -11,9 +11,13 @@ class CertificateResponse extends ZatcaResponse
         return $this->getOptionalAttribute('dispositionMessage') === 'ISSUED';
     }
 
-    public function requestId(): ?string
+    public function requestId(): ?int
     {
-        return $this->getOptionalAttribute('requestID');
+        if ($requestId = $this->getOptionalAttribute('requestID')) {
+            return (int) $requestId;
+        }
+
+        return null;
     }
 
     public function secret(): ?string

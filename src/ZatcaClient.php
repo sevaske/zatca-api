@@ -176,10 +176,22 @@ class ZatcaClient
     protected function sendRequest(RequestInterface $request): ResponseInterface
     {
         try {
-            return (new Pipeline)
+            /**
+             * @var $response ResponseInterface
+             */
+            $response = (new Pipeline)
                 ->send($request)
                 ->through($this->middleware)
                 ->then(fn ($req) => $this->client->sendRequest($req));
+
+            if ($response->getStatusCode() >= 400) {
+                throw new ZatcaRequestException($response->getReasonPhrase(), [
+                    'request' => $request,
+                    'response' => $response,
+                ]);
+            }
+
+            return $response;
         } catch (ClientExceptionInterface|Throwable $e) {
             throw (new ZatcaRequestException($e->getMessage(), [], $e->getCode(), $e))
                 ->withContext([
