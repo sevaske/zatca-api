@@ -162,11 +162,12 @@ try {
 
 Middleware in `ZatcaClient` allows you to inspect, modify, or wrap HTTP requests and responses. It works as a pipeline, meaning that multiple middleware can be chained together, each receiving the request and a `$next` callable that continues to the next middleware and ultimately to the HTTP client.
 
-`ZatcaClient` provides three ways to manage middleware:
+`ZatcaClient` provides four ways to manage middleware:
 
 1. **`withMiddleware($middleware)`** – returns a **new cloned instance** with the provided middleware. Existing middleware in the original client is **replaced** in the clone.
 2. **`setMiddleware($middleware)`** – **mutates the current instance**, replacing its middleware with the given ones.
 3. **`attachMiddleware($middleware)`** – **mutates the current instance**, adding the given middleware to the end of the existing middleware stack.
+4. **`withoutMiddleware`** - returns a **new cloned instance** with no middleware attached.
 
 
 All middleware must implement the `MiddlewareInterface`:
@@ -195,23 +196,26 @@ For example, implementation of "logging" requests and responses:
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Sevaske\ZatcaApi\Interfaces\MiddlewareInterface;
-use Sevaske\ZatcaApi\Responses\ZatcaResponse;
 
 // Attach a custom middleware to inspect requests and responses
 $client = $client->withMiddleware(new class implements MiddlewareInterface
 {
-    public function handle(RequestInterface $request, callable $next): ResponseInterface
+    public function handle(\Psr\Http\Message\RequestInterface $request, callable $next): ResponseInterface
     {
-        // Log request info
-        $this->info("URL: " . (string) $request->getUri());
-        $this->info("Body: " . $this->safeStreamContents($request->getBody()));
+        // request
+        $this->info('URL: ');
+        $this->info((string) $request->getUri());
+        $this->info('Body: ');
+        $this->info($this->safeStreamContents($request->getBody()));
 
-        // proceed with request
+        /**
+         * @var $response \Psr\Http\Message\ResponseInterface
+         */
         $response = $next($request);
 
-        // Log response info
-        $this->info("Response:");
-        print_r(ZatcaResponse::parse($response));
+        // response
+        $this->info('Response:');
+        $this->info($this->safeStreamContents($response->getBody()));
 
         return $response;
     }
@@ -222,9 +226,14 @@ $client = $client->withMiddleware(new class implements MiddlewareInterface
             return '[unseekable stream]';
         }
 
+        // Save original cursor position
         $pos = $stream->tell();
+
+        // Read from beginning
         $stream->rewind();
         $content = $stream->getContents();
+
+        // Restore original cursor
         $stream->seek($pos);
 
         return $content;
@@ -232,7 +241,7 @@ $client = $client->withMiddleware(new class implements MiddlewareInterface
 
     private function info(string $text): void
     {
-        echo "\n\r" . $text;
+        echo "\n\r".$text;
     }
 });
 ```

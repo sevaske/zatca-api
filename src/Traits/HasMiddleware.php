@@ -22,8 +22,8 @@ trait HasMiddleware
     {
         return $this->setMiddleware(array_merge(
             $this->middleware,
-            $this->normalizeMiddleware($middleware))
-        );
+            $this->normalizeMiddleware($middleware)
+        ));
     }
 
     /**
