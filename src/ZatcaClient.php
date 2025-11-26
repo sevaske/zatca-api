@@ -55,7 +55,7 @@ class ZatcaClient
         $this->client = $client;
         $this->requestFactory = $requestFactory;
         $this->streamFactory = $streamFactory;
-        $this->environment = $this->resolveEnvironment($environment);
+        $this->environment = $this->normalizeEnvironment($environment);
     }
 
     /**
@@ -68,7 +68,7 @@ class ZatcaClient
     public function withEnvironment($environment)
     {
         $clone = clone $this;
-        $clone->resolveEnvironment($environment);
+        $clone->normalizeEnvironment($environment);
         // reset token
         $clone->authToken = null;
 
@@ -240,11 +240,11 @@ class ZatcaClient
     }
 
     /**
-     * Resolve environment input to a ZatcaEnvironmentInterface.
+     * Normalize environment input to a ZatcaEnvironmentInterface.
      *
      * @param  string|ZatcaEnvironmentInterface  $environment
      */
-    protected function resolveEnvironment($environment): ZatcaEnvironmentInterface
+    protected function normalizeEnvironment($environment): ZatcaEnvironmentInterface
     {
         if ($environment instanceof ZatcaEnvironmentInterface) {
             return $environment;
