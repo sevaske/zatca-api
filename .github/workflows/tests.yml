@@ -43,7 +43,6 @@ jobs:
           php-version: ${{ matrix.php }}
           extensions: dom, curl, mbstring, zip, json
           coverage: none
-          ini-values: memory_limit=1G
 
       - name: Cache Composer packages
         uses: actions/cache@v3
@@ -55,11 +54,11 @@ jobs:
 
       - name: Install dependencies (stable)
         if: matrix.stability == 'stable'
-        run: composer install --no-interaction --prefer-dist --no-progress
+        run: composer install --no-interaction --prefer-dist --no-dev --ignore-platform-reqs
 
       - name: Install dependencies (prefer-lowest)
         if: matrix.stability == 'lowest'
-        run: composer update --prefer-lowest --no-interaction --prefer-dist
+        run: composer update --prefer-lowest --no-interaction --prefer-dist --no-dev --ignore-platform-reqs
 
       - name: Run PHPUnit
         run: vendor/bin/phpunit --configuration phpunit.xml
