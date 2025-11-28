@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests;
+namespace Tests\Middleware;
 
 use PHPUnit\Framework\TestCase;
 use Sevaske\ZatcaApi\Middleware\Pipeline;
