@@ -8,6 +8,10 @@ on:
       - 'phpstan.neon.dist'
       - '.github/workflows/phpstan.yml'
   pull_request:
+    paths:
+      - '**/*.php'
+      - 'phpstan.neon'
+      - 'phpstan.neon.dist'
 
 jobs:
   phpstan:
@@ -26,10 +30,16 @@ jobs:
           coverage: none
           extensions: json, mbstring
 
-      - name: Install composer dependencies
-        uses: ramsey/composer-install@v3
-        with:
-          dependency-versions: prefer-stable
+      - name: Install composer dependencies (without dev)
+        run: composer install --no-dev --ignore-platform-reqs
 
       - name: Run PHPStan
         run: vendor/bin/phpstan analyse src tests --error-format=github
+          coverage: none
+          extensions: json, mbstring
+
+      - name: Install all composer dependencies
+        run: composer install --no-interaction
+
+      - name: Run Laravel Pint
+        run: vendor/bin/pint

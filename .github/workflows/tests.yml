@@ -3,11 +3,15 @@ name: Tests
 on:
   push:
     paths:
-      - '**.php'
+      - '**/*.php'
       - 'composer.json'
       - 'phpunit.xml'
       - '.github/workflows/tests.yml'
   pull_request:
+    paths:
+      - '**/*.php'
+      - 'composer.json'
+      - 'phpunit.xml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,10 +25,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: [8.4, 8.3, 8.2, 8.1, 8.0, 7.4]
+        php: [7.4, 8.0, 8.1, 8.2, 8.3, 8.4]
         stability: [stable]
         include:
-          # lowest deps — только одна версия (быстро и безопасно)
           - php: 8.2
             stability: lowest
 
