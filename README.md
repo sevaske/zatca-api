@@ -146,7 +146,7 @@ use Sevaske\ZatcaApi\Exceptions\ZatcaResponseException;
 */
 $productionClient = $client->withEnvironment('production');
 $productionAuth = ZatcaAuth($productionCertificateResponse->certificate(), $productionCertificateResponse->secret());
-$client->setAuthToken($productionAuth);
+$productionClient->setAuthToken($productionAuth);
 
 try {
     // submitting production invoices
