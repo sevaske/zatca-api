@@ -7,7 +7,7 @@ namespace Tests\Middleware;
 use PHPUnit\Framework\TestCase;
 use Sevaske\ZatcaApi\Middleware\Pipeline;
 
-class PipelineTest extends TestCase
+final class PipelineTest extends TestCase
 {
     public function test_pipeline_with_callable(): void
     {

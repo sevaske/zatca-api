@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Tests;
+namespace Tests\Responses;
 
 use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Psr7\Utils;
@@ -11,7 +11,7 @@ use Psr\Http\Message\ResponseInterface;
 use Sevaske\ZatcaApi\Exceptions\ZatcaResponseException;
 use Sevaske\ZatcaApi\Responses\ValidationResponse;
 
-class ValidationResponseTest extends TestCase
+final class ValidationResponseTest extends TestCase
 {
     /**
      * Create a PSR-7 JSON response for testing.

@@ -46,10 +46,10 @@ trait Http
      */
     protected function prepareRequest(string $method, string $uri, array $options = []): RequestInterface
     {
-        // create a base request using the PSR-17 request factory
-        $request = $this->requestFactory->createRequest($method, $uri);
-
         try {
+            // create a base request using the PSR-17 request factory
+            $request = $this->requestFactory->createRequest($method, $uri);
+
             // query
             if (array_key_exists('query', $options)) {
                 // Convert query array into a URL-encoded query string

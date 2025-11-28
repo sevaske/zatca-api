@@ -7,7 +7,7 @@ namespace Tests\Requests;
 use PHPUnit\Framework\TestCase;
 use Sevaske\ZatcaApi\Requests\CertificateRequest;
 
-class CertificateRequestTest extends TestCase
+final class CertificateRequestTest extends TestCase
 {
     /**
      * We define a small concrete class for testing

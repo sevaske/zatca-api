@@ -9,7 +9,7 @@ use Sevaske\ZatcaApi\Responses\ComplianceInvoiceResponse;
 use Sevaske\ZatcaApi\Responses\ReportingInvoiceResponse;
 use Sevaske\ZatcaApi\Responses\ZatcaResponse;
 
-class ReportingResponseTest extends TestCase
+final class ReportingResponseTest extends TestCase
 {
     /**
      * Helper to create a mock Response with given attributes.
