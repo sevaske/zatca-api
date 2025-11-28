@@ -5,29 +5,29 @@ declare(strict_types=1);
 namespace Tests\Responses;
 
 use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\StreamInterface;
 use Sevaske\ZatcaApi\Responses\ReportingInvoiceResponse;
 
-final class ReportingResponseTest extends TestCase
+final class ReportingInvoiceResponseTest extends TestCase
 {
     /**
-     * Helper to create a mock ReportingInvoiceResponse with given attributes.
+     * Helper to create a mock ResponseInterface with given attributes as JSON body.
      */
     protected function makeResponse(array $attributes): ReportingInvoiceResponse
     {
-        return new class($attributes) extends ReportingInvoiceResponse
-        {
-            public function __construct(array $attributes)
-            {
-                // Use the protected $attributes property from HasAttributes trait
-                $this->attributes = $attributes;
-            }
+        $json = json_encode($attributes, JSON_THROW_ON_ERROR);
 
-            // Ensure public visibility matches ZatcaResponse
-            public function getOptionalAttribute(string $key)
-            {
-                return $this->attributes[$key] ?? null;
-            }
-        };
+        $stream = $this->createMock(StreamInterface::class);
+        $stream->method('getContents')->willReturn($json);
+        $stream->method('isSeekable')->willReturn(true);
+        $stream->method('rewind');
+
+        $response = $this->createMock(ResponseInterface::class);
+        $response->method('getBody')->willReturn($stream);
+        $response->method('getStatusCode')->willReturn(200);
+
+        return new ReportingInvoiceResponse($response);
     }
 
     public function test_success_response_200(): void
@@ -64,10 +64,7 @@ final class ReportingResponseTest extends TestCase
             'reportingStatus' => 'REPORTED',
             'validationResults' => [
                 'infoMessages' => [['status' => 'PASS']],
-                'warningMessages' => [
-                    ['status' => 'WARNING'],
-                    ['status' => 'WARNING'],
-                ],
+                'warningMessages' => [['status' => 'WARNING'], ['status' => 'WARNING']],
                 'errorMessages' => [],
                 'status' => 'WARNING',
             ],
@@ -88,10 +85,7 @@ final class ReportingResponseTest extends TestCase
             'validationResults' => [
                 'infoMessages' => [['status' => 'PASS']],
                 'warningMessages' => [],
-                'errorMessages' => [
-                    ['status' => 'ERROR'],
-                    ['status' => 'ERROR'],
-                ],
+                'errorMessages' => [['status' => 'ERROR'], ['status' => 'ERROR']],
                 'status' => 'ERROR',
             ],
         ]);
@@ -124,10 +118,7 @@ final class ReportingResponseTest extends TestCase
                 'infoMessages' => [],
                 'warningMessages' => [],
                 'errorMessages' => [
-                    [
-                        'message' => 'Invoice was already Reported successfully earlier.',
-                        'status' => 'ERROR',
-                    ],
+                    ['message' => 'Invoice was already Reported successfully earlier.', 'status' => 'ERROR'],
                 ],
                 'status' => 'ERROR',
             ],
