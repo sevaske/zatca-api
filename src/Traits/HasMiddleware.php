@@ -15,7 +15,7 @@ trait HasMiddleware
     /**
      * Add one or multiple middleware instances to the existing list.
      *
-     * @param MiddlewareInterface|MiddlewareInterface[] $middleware
+     * @param  MiddlewareInterface|MiddlewareInterface[]  $middleware
      * @return static
      */
     public function attachMiddleware($middleware)
