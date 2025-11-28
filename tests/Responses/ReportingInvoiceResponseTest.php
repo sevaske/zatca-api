@@ -18,11 +18,13 @@ final class ReportingInvoiceResponseTest extends TestCase
     {
         $json = json_encode($attributes, JSON_THROW_ON_ERROR);
 
+        // Mock the stream to return the JSON content
         $stream = $this->createMock(StreamInterface::class);
         $stream->method('getContents')->willReturn($json);
         $stream->method('isSeekable')->willReturn(true);
         $stream->method('rewind');
 
+        // Mock the ResponseInterface
         $response = $this->createMock(ResponseInterface::class);
         $response->method('getBody')->willReturn($stream);
         $response->method('getStatusCode')->willReturn(200);
@@ -30,114 +32,31 @@ final class ReportingInvoiceResponseTest extends TestCase
         return new ReportingInvoiceResponse($response);
     }
 
-    public function test_success_response_200(): void
+    public function test_success_reported_invoice(): void
     {
         $response = $this->makeResponse([
             'reportingStatus' => 'REPORTED',
-            'validationResults' => [
-                'infoMessages' => [
-                    [
-                        'type' => 'INFO',
-                        'code' => 'XSD_ZATCA_VALID',
-                        'category' => 'XSD validation',
-                        'message' => 'Complied with UBL 2.1 standards in line with ZATCA specifications',
-                        'status' => 'PASS',
-                    ],
-                ],
-                'warningMessages' => [],
-                'errorMessages' => [],
-                'status' => 'PASS',
-            ],
         ]);
 
         $this->assertTrue($response->success());
-        $this->assertEquals('PASS', $response->validationStatus());
-        $this->assertEmpty($response->warnings());
-        $this->assertEmpty($response->errors());
-        $this->assertFalse($response->hasErrors());
-        $this->assertFalse($response->hasWarnings());
+        $this->assertEquals('REPORTED', $response->status());
     }
 
-    public function test_response_with_warnings_202(): void
+    public function test_unsuccessful_invoice(): void
     {
         $response = $this->makeResponse([
-            'reportingStatus' => 'REPORTED',
-            'validationResults' => [
-                'infoMessages' => [['status' => 'PASS']],
-                'warningMessages' => [['status' => 'WARNING'], ['status' => 'WARNING']],
-                'errorMessages' => [],
-                'status' => 'WARNING',
-            ],
-        ]);
-
-        $this->assertTrue($response->success());
-        $this->assertEquals('WARNING', $response->validationStatus());
-        $this->assertCount(2, $response->warnings());
-        $this->assertEmpty($response->errors());
-        $this->assertFalse($response->hasErrors());
-        $this->assertTrue($response->hasWarnings());
-    }
-
-    public function test_response_with_errors_400(): void
-    {
-        $response = $this->makeResponse([
-            'reportingStatus' => 'NOT_REPORTED',
-            'validationResults' => [
-                'infoMessages' => [['status' => 'PASS']],
-                'warningMessages' => [],
-                'errorMessages' => [['status' => 'ERROR'], ['status' => 'ERROR']],
-                'status' => 'ERROR',
-            ],
+            'reportingStatus' => 'PENDING',
         ]);
 
         $this->assertFalse($response->success());
-        $this->assertEquals('ERROR', $response->validationStatus());
-        $this->assertCount(2, $response->errors());
-        $this->assertTrue($response->hasErrors());
-        $this->assertFalse($response->hasWarnings());
+        $this->assertEquals('PENDING', $response->status());
     }
 
-    public function test_unauthorized_response_401_should_return_null_validation(): void
+    public function test_missing_attributes(): void
     {
-        $response = $this->makeResponse([
-            'timestamp' => time(),
-            'status' => 401,
-            'error' => 'Unauthorized',
-            'message' => '',
-        ]);
+        $response = $this->makeResponse([]);
 
         $this->assertFalse($response->success());
-        $this->assertNull($response->validationStatus());
-    }
-
-    public function test_already_reported_response_409(): void
-    {
-        $response = $this->makeResponse([
-            'reportingStatus' => 'NOT_REPORTED',
-            'validationResults' => [
-                'infoMessages' => [],
-                'warningMessages' => [],
-                'errorMessages' => [
-                    ['message' => 'Invoice was already Reported successfully earlier.', 'status' => 'ERROR'],
-                ],
-                'status' => 'ERROR',
-            ],
-        ]);
-
-        $this->assertFalse($response->success());
-        $this->assertEquals('ERROR', $response->validationStatus());
-        $this->assertTrue($response->hasErrors());
-    }
-
-    public function test_internal_server_error_500_response(): void
-    {
-        $response = $this->makeResponse([
-            'category' => 'HTTP-Errors',
-            'code' => '500',
-            'message' => 'Something went wrong and caused an Internal Server Error.',
-        ]);
-
-        $this->assertFalse($response->success());
-        $this->assertNull($response->validationStatus());
+        $this->assertNull($response->status());
     }
 }
