@@ -22,15 +22,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup PHP 7.4
+      - name: Setup PHP 8.1
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '7.4'
+          php-version: '8.1'
           coverage: none
           extensions: json, mbstring
 
-      - name: Install composer dependencies (without dev)
-        run: composer install --no-dev --ignore-platform-reqs
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist
 
       - name: Run PHPStan
         run: vendor/bin/phpstan analyse src tests --error-format=github
