@@ -14,7 +14,8 @@ final class CertificateRequestTest extends TestCase
      */
     private function createRequest(string $csr, string $otp): CertificateRequest
     {
-        return new class($csr, $otp) extends CertificateRequest {
+        return new class($csr, $otp) extends CertificateRequest
+        {
             public function uri(): string
             {
                 return '/some-url';

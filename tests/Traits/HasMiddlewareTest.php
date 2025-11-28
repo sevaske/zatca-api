@@ -6,14 +6,15 @@ namespace Tests\Traits;
 
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
-use Sevaske\ZatcaApi\Traits\HasMiddleware;
 use Sevaske\ZatcaApi\Interfaces\MiddlewareInterface;
+use Sevaske\ZatcaApi\Traits\HasMiddleware;
 
 final class HasMiddlewareTest extends TestCase
 {
     private function createObjectWithTrait()
     {
-        return new class {
+        return new class
+        {
             use HasMiddleware;
         };
     }
@@ -120,7 +121,7 @@ final class HasMiddlewareTest extends TestCase
     public function test_normalize_middleware_throws_for_invalid_type(): void
     {
         $obj = $this->createObjectWithTrait();
-        $invalid = new \stdClass();
+        $invalid = new \stdClass;
 
         $ref = new \ReflectionMethod($obj, 'normalizeMiddleware');
         $ref->setAccessible(true);
@@ -133,7 +134,7 @@ final class HasMiddlewareTest extends TestCase
     {
         $obj = $this->createObjectWithTrait();
         $valid = $this->createMiddlewareMock();
-        $invalid = new \stdClass();
+        $invalid = new \stdClass;
 
         $ref = new \ReflectionMethod($obj, 'normalizeMiddleware');
         $ref->setAccessible(true);

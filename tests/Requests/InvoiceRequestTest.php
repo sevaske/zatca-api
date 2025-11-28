@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Tests\Requests;
 
 use PHPUnit\Framework\TestCase;
-use Sevaske\ZatcaApi\Requests\InvoiceRequest;
 use Sevaske\ZatcaApi\Interfaces\RequiresAuthTokenInterface;
+use Sevaske\ZatcaApi\Requests\InvoiceRequest;
 
 final class InvoiceRequestTest extends TestCase
 {
@@ -15,7 +15,8 @@ final class InvoiceRequestTest extends TestCase
      */
     private function createRequest(string $invoice, string $hash, string $uuid): InvoiceRequest
     {
-        return new class($invoice, $hash, $uuid) extends InvoiceRequest {
+        return new class($invoice, $hash, $uuid) extends InvoiceRequest
+        {
             public function uri(): string
             {
                 return '/some-url';

@@ -4,19 +4,20 @@ declare(strict_types=1);
 
 namespace Tests\Traits;
 
+use GuzzleHttp\Psr7\Request;
+use GuzzleHttp\Psr7\Utils;
 use PHPUnit\Framework\TestCase;
-use Sevaske\ZatcaApi\Traits\Http;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
-use GuzzleHttp\Psr7\Request;
-use GuzzleHttp\Psr7\Utils;
+use Sevaske\ZatcaApi\Traits\Http;
 
 final class HttpTraitTest extends TestCase
 {
     private function createObjectWithTrait(): object
     {
-        return new class {
+        return new class
+        {
             use Http;
 
             public function setDependencies(
@@ -52,7 +53,7 @@ final class HttpTraitTest extends TestCase
         $requestFactory->method('createRequest')->willReturn(new Request('POST', 'https://example.com'));
 
         $streamFactory = $this->createMock(StreamFactoryInterface::class);
-        $streamFactory->method('createStream')->willReturnCallback(fn($body) => Utils::streamFor($body));
+        $streamFactory->method('createStream')->willReturnCallback(fn ($body) => Utils::streamFor($body));
 
         $obj = $this->createObjectWithTrait();
         $obj->setDependencies($this->createMock(ClientInterface::class), $requestFactory, $streamFactory);
@@ -60,7 +61,7 @@ final class HttpTraitTest extends TestCase
         $options = [
             'query' => ['a' => 1],
             'headers' => ['Content-Type' => 'application/json', 'X-Test' => 'value'],
-            'body' => ['key' => 'value']
+            'body' => ['key' => 'value'],
         ];
 
         $request = $obj->preparePublic('POST', 'https://example.com', $options);
@@ -79,14 +80,14 @@ final class HttpTraitTest extends TestCase
         $requestFactory->method('createRequest')->willReturn(new Request('POST', 'https://example.com'));
 
         $streamFactory = $this->createMock(StreamFactoryInterface::class);
-        $streamFactory->method('createStream')->willReturnCallback(fn($body) => Utils::streamFor($body));
+        $streamFactory->method('createStream')->willReturnCallback(fn ($body) => Utils::streamFor($body));
 
         $obj = $this->createObjectWithTrait();
         $obj->setDependencies($this->createMock(ClientInterface::class), $requestFactory, $streamFactory);
 
         $options = [
             'headers' => ['Content-Type' => 'application/x-www-form-urlencoded'],
-            'body' => ['key' => 'value']
+            'body' => ['key' => 'value'],
         ];
 
         $request = $obj->preparePublic('POST', 'https://example.com', $options);
@@ -100,7 +101,7 @@ final class HttpTraitTest extends TestCase
         $requestFactory = $this->createMock(RequestFactoryInterface::class);
 
         // When createRequest is called, throw a standard Exception
-        $requestFactory->method('createRequest')->willReturnCallback(function() {
+        $requestFactory->method('createRequest')->willReturnCallback(function () {
             throw new \Exception('fail');
         });
 

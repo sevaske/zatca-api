@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Tests\Traits;
 
 use PHPUnit\Framework\TestCase;
-use Sevaske\ZatcaApi\Traits\HasAuthToken;
 use Sevaske\ZatcaApi\Interfaces\AuthTokenInterface;
+use Sevaske\ZatcaApi\Traits\HasAuthToken;
 
 final class HasAuthTokenTest extends TestCase
 {
@@ -15,7 +15,8 @@ final class HasAuthTokenTest extends TestCase
         $mockToken = $this->createMock(AuthTokenInterface::class);
 
         // Create an anonymous class using the HasAuthToken trait
-        $obj = new class {
+        $obj = new class
+        {
             use HasAuthToken;
         };
 
@@ -32,7 +33,8 @@ final class HasAuthTokenTest extends TestCase
     public function test_set_auth_token_can_accept_null(): void
     {
         // Create an anonymous class using the HasAuthToken trait
-        $obj = new class {
+        $obj = new class
+        {
             use HasAuthToken;
         };
 
