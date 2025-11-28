@@ -177,7 +177,7 @@ class ZatcaClient
     {
         try {
             /**
-             * @var $response ResponseInterface
+             * @var ResponseInterface $response
              */
             $response = (new Pipeline)
                 ->send($request)

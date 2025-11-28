@@ -5,28 +5,24 @@ declare(strict_types=1);
 namespace Tests\Responses;
 
 use PHPUnit\Framework\TestCase;
-use Sevaske\ZatcaApi\Responses\ComplianceInvoiceResponse;
 use Sevaske\ZatcaApi\Responses\ReportingInvoiceResponse;
-use Sevaske\ZatcaApi\Responses\ZatcaResponse;
 
 final class ReportingResponseTest extends TestCase
 {
     /**
-     * Helper to create a mock Response with given attributes.
-     *
-     * @return ReportingInvoiceResponse|ComplianceInvoiceResponse|ZatcaResponse
+     * Helper to create a mock ReportingInvoiceResponse with given attributes.
      */
-    protected function makeResponse(array $attributes): ZatcaResponse
+    protected function makeResponse(array $attributes): ReportingInvoiceResponse
     {
-        // Here we just use the real Response class, assuming it accepts array in constructor
         return new class($attributes) extends ReportingInvoiceResponse
         {
             public function __construct(array $attributes)
             {
+                // Use the protected $attributes property from HasAttributes trait
                 $this->attributes = $attributes;
             }
 
-            // Override method to provide optional attributes
+            // Ensure public visibility matches ZatcaResponse
             public function getOptionalAttribute(string $key)
             {
                 return $this->attributes[$key] ?? null;
@@ -67,9 +63,7 @@ final class ReportingResponseTest extends TestCase
         $response = $this->makeResponse([
             'reportingStatus' => 'REPORTED',
             'validationResults' => [
-                'infoMessages' => [
-                    ['status' => 'PASS'],
-                ],
+                'infoMessages' => [['status' => 'PASS']],
                 'warningMessages' => [
                     ['status' => 'WARNING'],
                     ['status' => 'WARNING'],
@@ -119,6 +113,7 @@ final class ReportingResponseTest extends TestCase
         ]);
 
         $this->assertFalse($response->success());
+        $this->assertNull($response->validationStatus());
     }
 
     public function test_already_reported_response_409(): void
