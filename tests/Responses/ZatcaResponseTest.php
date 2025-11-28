@@ -12,9 +12,6 @@ use Sevaske\ZatcaApi\Responses\ZatcaResponse;
 
 final class ZatcaResponseTest extends TestCase
 {
-    /**
-     * Helper to create a mock ResponseInterface with JSON body.
-     */
     private function createMockResponse(array $data = [], int $status = 200): ResponseInterface
     {
         $json = json_encode($data);
@@ -30,12 +27,22 @@ final class ZatcaResponseTest extends TestCase
         return $response;
     }
 
+    /**
+     * Creates a minimal concrete implementation of ZatcaResponse.
+     */
+    private function makeInstance(ResponseInterface $response): ZatcaResponse
+    {
+        return new class($response) extends ZatcaResponse {
+            // no properties, no overrides
+        };
+    }
+
     public function test_constructor_parses_attributes(): void
     {
         $data = ['foo' => 'bar', 'baz' => 123];
         $response = $this->createMockResponse($data);
 
-        $instance = new class($response) extends ZatcaResponse {};
+        $instance = $this->makeInstance($response);
 
         $this->assertSame('bar', $instance->foo);
         $this->assertSame(123, $instance->baz);
@@ -44,7 +51,7 @@ final class ZatcaResponseTest extends TestCase
     public function test_raw_returns_response(): void
     {
         $response = $this->createMockResponse();
-        $instance = new class($response) extends ZatcaResponse {};
+        $instance = $this->makeInstance($response);
 
         $this->assertSame($response, $instance->raw());
     }
@@ -71,6 +78,7 @@ final class ZatcaResponseTest extends TestCase
         $response->method('getStatusCode')->willReturn(500);
 
         $this->expectException(ZatcaResponseException::class);
+
         ZatcaResponse::parse($response);
     }
 }
