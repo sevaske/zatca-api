@@ -68,7 +68,7 @@ class ZatcaClient
     public function withEnvironment($environment)
     {
         $clone = clone $this;
-        $clone->normalizeEnvironment($environment);
+        $clone->environment = $clone->normalizeEnvironment($environment);
         // reset token
         $clone->authToken = null;
 
@@ -193,12 +193,44 @@ class ZatcaClient
 
             return $response;
         } catch (ClientExceptionInterface|Throwable $e) {
+            // Safely read and sanitize request information for context
+            try {
+                $rawHeaders = $request->getHeaders();
+                $sanitizedHeaders = [];
+
+                foreach ($rawHeaders as $name => $values) {
+                    if (strtolower($name) === 'authorization') {
+                        $sanitizedHeaders[$name] = ['[REDACTED]'];
+                        continue;
+                    }
+
+                    $sanitizedHeaders[$name] = $values;
+                }
+            } catch (Throwable $ex) {
+                $sanitizedHeaders = ['[unreadable headers]'];
+            }
+
+            try {
+                $stream = $request->getBody();
+                if ($stream->isSeekable()) {
+                    $stream->rewind();
+                    $contents = $stream->getContents();
+                    $stream->rewind();
+                } else {
+                    $contents = (string) $stream;
+                }
+
+                $body = strlen($contents) > 1024 ? substr($contents, 0, 1024)."... (truncated)" : $contents;
+            } catch (Throwable $ex) {
+                $body = '[unreadable body]';
+            }
+
             throw (new ZatcaRequestException($e->getMessage(), [], $e->getCode(), $e))
                 ->withContext([
                     'uri' => $request->getUri(),
-                    'body' => $request->getBody(),
+                    'body' => $body,
                     'method' => $request->getMethod(),
-                    'headers' => $request->getHeaders(),
+                    'headers' => $sanitizedHeaders,
                 ]);
         }
     }
