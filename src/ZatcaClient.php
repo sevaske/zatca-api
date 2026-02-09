@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sevaske\ZatcaApi;
 
+use InvalidArgumentException;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -280,6 +281,10 @@ class ZatcaClient
     {
         if ($environment instanceof ZatcaEnvironmentInterface) {
             return $environment;
+        }
+
+        if (! is_string($environment)) {
+            throw new InvalidArgumentException('Environment must be a string or ZatcaEnvironmentInterface.');
         }
 
         return new ZatcaEnvironment((string) $environment);
