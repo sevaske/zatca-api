@@ -55,6 +55,12 @@ abstract class ZatcaResponse implements ZatcaResponseInterface
         }
 
         $content = $body->getContents();
+
+        // empty bodies are valid for some endpoints (no JSON payload)
+        if (trim($content) === '') {
+            return [];
+        }
+
         $parsed = json_decode($content, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
