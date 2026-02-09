@@ -1,5 +1,5 @@
 <p align="center">
-<img src="https://badgen.net/packagist/php/sevaske/zatca-api" alt="php Vers ion">
+<img src="https://badgen.net/packagist/php/sevaske/zatca-api" alt="php Version">
 <a href="https://packagist.org/packages/sevaske/zatca-api"><img alt="Packagist Stars" src="https://img.shields.io/packagist/stars/sevaske/zatca-api"></a>
 <a href="https://packagist.org/packages/sevaske/zatca-api"><img alt="Packagist Downloads" src="https://img.shields.io/packagist/dt/sevaske/zatca-api"></a>
 <a href="https://packagist.org/packages/sevaske/zatca-api"><img alt="Packagist Version" src="https://img.shields.io/packagist/v/sevaske/zatca-api"></a>
@@ -25,6 +25,40 @@ If you’re looking for a library to generate XML invoices, you can use this one
 - Supports multiple environments: sandbox, simulation, production
 - Follows PSR standards (PSR-4, PSR-7, PSR-17, PSR-18)
 - Works with any PSR-18 compatible HTTP client (e.g., Guzzle)
+
+
+## Environments
+
+| Environment  | Purpose                          | Certificates        |
+|-------------|----------------------------------|---------------------|
+| sandbox     | CSR + basic testing              | Sandbox certificate |
+| simulation  | Compliance invoices (6 required) | Compliance cert     |
+| production  | Real invoices                    | Production cert     |
+
+
+## Invoice types
+
+- **Reporting (B2P)**  
+  Used for invoices issued to consumers.
+
+- **Clearance (B2B)**  
+  Used for invoices issued to VAT-registered businesses.
+
+
+## Authentication flow
+
+1. Generate CSR (outside this library)
+2. Request compliance certificate
+3. Create `ZatcaAuth` from certificate + secret
+4. Submit simulation invoices
+5. Request production certificate
+6. Switch client to `production` environment
+
+
+## Immutability
+
+Methods like `withEnvironment()` and `withMiddleware()` return a **new client instance**.  
+The original client is not modified.
 
 
 ## Installation
@@ -61,14 +95,24 @@ $client = new ZatcaClient(
 use Sevaske\ZatcaApi\Exceptions\ZatcaRequestException;
 use Sevaske\ZatcaApi\Exceptions\ZatcaResponseException;
 
+/**
+* @var Sevaske\ZatcaApi\ZatcaClient $client 
+*/
+
 try {
-    /**
-    * @var $client \Sevaske\ZatcaApi\ZatcaClient 
-    */
     $certificateResponse = $client->complianceCertificate('your .csr file content', '112233');
 } catch (ZatcaRequestException|ZatcaResponseException $e) {
     // handle
 }
+
+$credentials = [
+    'requestId' => $certificateResponse->requestId(),
+    'certificate' => $certificateResponse->certificate(),
+    'secret' => $certificateResponse->secret(),
+];
+
+print_r($credentials);
+file_put_contents('output/credentials.json', json_encode($credentials, JSON_PRETTY_PRINT));
 ```
 
 #### Authorized requests
@@ -76,10 +120,13 @@ try {
 Create AuthToken from compliance certificate to make authorized requests.
 
 ```php
+use Sevaske\ZatcaApi\ZatcaAuth;
+
 /**
-* @var $certificateResponse \Sevaske\ZatcaApi\Responses\CertificateResponse
-* @var $client \Sevaske\ZatcaApi\ZatcaClient
- */
+* @var Sevaske\ZatcaApi\Responses\CertificateResponse $certificateResponse
+* @var Sevaske\ZatcaApi\ZatcaClient $client
+*/
+
 $authToken = new ZatcaAuth($certificateResponse->certificate(), $certificateResponse->secret());
 $client->setAuthToken($authToken);
 ```
@@ -94,6 +141,10 @@ Once you have a valid compliance certificate and auth token, you can submit invo
 ```php
 use Sevaske\ZatcaApi\Exceptions\ZatcaRequestException;
 use Sevaske\ZatcaApi\Exceptions\ZatcaResponseException;
+
+/**
+* @var Sevaske\ZatcaApi\ZatcaClient $client
+*/
 
 try {
     // B2P
@@ -121,11 +172,23 @@ use Sevaske\ZatcaApi\Exceptions\ZatcaRequestException;
 use Sevaske\ZatcaApi\Exceptions\ZatcaResponseException;
 
 /**
-* @var $client \Sevaske\ZatcaApi\ZatcaClient
+* @var \Sevaske\ZatcaApi\ZatcaClient $client
 */
 
 try {
     $productionCertificateResponse = $client->productionCertificate($certificateResponse->requestId());
+    
+$credentials = [
+    'requestId' => $productionCertificateResponse->requestId(),
+    'certificate' => $productionCertificateResponse->certificate(),
+    'secret' => $productionCertificateResponse->secret(),
+];
+
+// display
+print_r($credentials);
+
+// save
+file_put_contents('output/production-credentials.json', json_encode($credentials, JSON_PRETTY_PRINT));
 } catch (ZatcaRequestException|ZatcaResponseException $e) {
     // handle
 }
@@ -141,20 +204,24 @@ use Sevaske\ZatcaApi\Exceptions\ZatcaRequestException;
 use Sevaske\ZatcaApi\Exceptions\ZatcaResponseException;
 
 /**
-* @var $client \Sevaske\ZatcaApi\ZatcaClient
-* @var $productionCertificateResponse \Sevaske\ZatcaApi\Responses\ProductionCertificateResponse
+* @var Sevaske\ZatcaApi\ZatcaClient $client
+* @var Sevaske\ZatcaApi\Responses\ProductionCertificateResponse $productionCertificateResponse
 */
 $productionClient = $client->withEnvironment('production');
-$productionAuth = ZatcaAuth($productionCertificateResponse->certificate(), $productionCertificateResponse->secret());
+$productionAuth = new ZatcaAuth($productionCertificateResponse->certificate(), $productionCertificateResponse->secret());
 $productionClient->setAuthToken($productionAuth);
 
 try {
     // submitting production invoices
-    $productionClient->reportingInvoice('my real B2P invoice xml', 'hash', 'uuid');
-    $productionClient->clearanceInvoice('my real B2P invoice xml', 'hash', 'uuid');
+    $responseReporting = $productionClient->reportingInvoice('my real B2P invoice xml', 'hash', 'uuid');
+    $responseClearance = $productionClient->clearanceInvoice('my real B2B invoice xml', 'hash', 'uuid');
 } catch (ZatcaRequestException|ZatcaResponseException $e) {
     // handle
 }
+
+print_r($responseReporting->toArray());
+print_r($responseClearance->toArray());
+
 ```
 
 
@@ -167,7 +234,7 @@ Middleware in `ZatcaClient` allows you to inspect, modify, or wrap HTTP requests
 1. **`withMiddleware($middleware)`** – returns a **new cloned instance** with the provided middleware. Existing middleware in the original client is **replaced** in the clone.
 2. **`setMiddleware($middleware)`** – **mutates the current instance**, replacing its middleware with the given ones.
 3. **`attachMiddleware($middleware)`** – **mutates the current instance**, adding the given middleware to the end of the existing middleware stack.
-4. **`withoutMiddleware`** - returns a **new cloned instance** with no middleware attached.
+4. **`withoutMiddleware()`** - returns a **new cloned instance** with no middleware attached.
 
 
 All middleware must implement the `MiddlewareInterface`:
@@ -200,7 +267,7 @@ use Sevaske\ZatcaApi\Interfaces\MiddlewareInterface;
 // Attach a custom middleware to inspect requests and responses
 $client = $client->withMiddleware(new class implements MiddlewareInterface
 {
-    public function handle(\Psr\Http\Message\RequestInterface $request, callable $next): ResponseInterface
+    public function handle(RequestInterface $request, callable $next): ResponseInterface
     {
         // request
         $this->info('URL: ');
