@@ -178,17 +178,17 @@ use Sevaske\ZatcaApi\Exceptions\ZatcaResponseException;
 try {
     $productionCertificateResponse = $client->productionCertificate($certificateResponse->requestId());
     
-$credentials = [
-    'requestId' => $productionCertificateResponse->requestId(),
-    'certificate' => $productionCertificateResponse->certificate(),
-    'secret' => $productionCertificateResponse->secret(),
-];
+    $credentials = [
+        'requestId' => $productionCertificateResponse->requestId(),
+        'certificate' => $productionCertificateResponse->certificate(),
+        'secret' => $productionCertificateResponse->secret(),
+    ];
 
-// display
-print_r($credentials);
+    // display
+    print_r($credentials);
 
-// save
-file_put_contents('output/production-credentials.json', json_encode($credentials, JSON_PRETTY_PRINT));
+    // save
+    file_put_contents('output/production-credentials.json', json_encode($credentials, JSON_PRETTY_PRINT));
 } catch (ZatcaRequestException|ZatcaResponseException $e) {
     // handle
 }
