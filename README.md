@@ -295,9 +295,9 @@ final class FakeInvoiceSubmitter implements InvoiceSubmitter
 You can also inject a mock PSR-18 client, such as [`php-http/mock-client`](https://github.com/php-http/mock-client),
 via `ClientOptions::withHttpClient()`.
 
-## Upgrading from 2.x
+## Upgrading from 1.x and 2.x
 
-See [UPGRADE.md](UPGRADE.md).
+See [UPGRADE.md](UPGRADE.md) for upgrading from 1.x and 2.x.
 
 ## Development
 

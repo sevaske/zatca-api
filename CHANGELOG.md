@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.0.0] - Unreleased
 
-A rewrite of the client. See [UPGRADE.md](UPGRADE.md) for migrating from 2.x.
+A rewrite of the client. See [UPGRADE.md](UPGRADE.md) for migrating from 1.x and 2.x.
 
 ### Added
 
