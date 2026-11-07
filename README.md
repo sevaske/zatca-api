@@ -260,6 +260,10 @@ $zatca = Client::production(ClientOptions::create()->withHttpClient(
 ));
 ```
 
+> **Redirects.** ZATCA answers HTTP 303 when clearance is deactivated ("use the reporting endpoint").
+> The HTTP client must not follow redirects, otherwise the 303 never reaches the library.
+> Guzzle does not follow redirects in PSR-18 mode (`sendRequest()`); for Symfony HttpClient pass `['max_redirects' => 0]`.
+
 ## Testing your application
 
 Type-hint `Sevaske\ZatcaApi\Contracts\InvoiceSubmitter` in your services. `Client::invoices()` implements it,
