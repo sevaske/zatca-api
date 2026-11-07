@@ -30,8 +30,8 @@ final class ZatcaClientTest extends TestCase
         // create a clone with production environment
         $prod = $clientObj->withEnvironment('production');
 
-        $this->assertSame('production', (string) $prod->environment());
-        $this->assertSame('sandbox', (string) $clientObj->environment());
+        $this->assertSame('https://gw-fatoora.zatca.gov.sa/e-invoicing/core', $prod->environment()->baseUrl());
+        $this->assertSame('https://gw-fatoora.zatca.gov.sa/e-invoicing/developer-portal', $clientObj->environment()->baseUrl());
 
         // the cloned instance should have reset auth token — attempting an authorized request must fail
         $this->expectException(ZatcaRequestException::class);
