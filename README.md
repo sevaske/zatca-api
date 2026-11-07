@@ -18,7 +18,7 @@ If you’re looking for a library to generate XML invoices, you can use this one
 
 ## Features
 
-- Full coverage of ZATCA API endpoints (reporting, clearance, compliance)
+- Full coverage of ZATCA API endpoints (reporting, clearance, compliance, production certificate onboarding and renewal)
 - Authentication via certificate and secret or auth token
 - Supports middleware for request/response processing
 - Typed response objects for easy validation and error handling
@@ -57,7 +57,7 @@ If you’re looking for a library to generate XML invoices, you can use this one
 
 ## Immutability
 
-Methods like `withEnvironment()` and `withMiddleware()` return a **new client instance**.  
+Methods like `withEnvironment()`, `withMiddleware()`, `withLanguage()` and `withErrorResponses()` return a **new client instance**.  
 The original client is not modified.
 
 
@@ -161,6 +161,13 @@ try {
 }
 ```
 
+The required `Clearance-Status` header is sent automatically: `1` for clearance. For reporting it defaults to `1`
+(clearance enabled for the taxpayer); pass `false` as the fourth argument when clearance is disabled:
+
+```php
+$client->reportingInvoice('b2b invoice xml', 'hash', 'uuid', false); // Clearance-Status: 0
+```
+
 #### Production Onboarding
 
 After submitting the required simulation invoices, you can request a production certificate.
@@ -222,6 +229,50 @@ try {
 print_r($responseReporting->toArray());
 print_r($responseClearance->toArray());
 
+```
+
+#### Renewing the Production Certificate
+
+Renewal is authorized by the **current** production certificate and requires a renewal OTP from the Fatoora portal and a new CSR.
+
+```php
+/**
+* @var Sevaske\ZatcaApi\ZatcaClient $productionClient  authorized with the current production certificate
+*/
+$renewal = $productionClient->renewProductionCertificate($newCsr, $otp);
+
+if ($renewal->success()) {
+    $newAuth = new ZatcaAuth($renewal->certificate(), $renewal->secret());
+} elseif ($renewal->isNotCompliant()) {
+    // HTTP 428: ZATCA issued a compliance certificate, pass the compliance checks again
+    // and then request a production certificate with $renewal->requestId()
+}
+```
+
+#### Response status codes
+
+| Status | Endpoint | Meaning | Library behaviour |
+|---|---|---|---|
+| 200 | all | success | response |
+| 202 | reporting, clearance | accepted with warnings | response, `hasWarnings()` |
+| 208 | clearance | invoice hash submitted before, cleared invoice returned | response, `success()` |
+| 303 | clearance | clearance is deactivated, use reporting | response, `isClearanceDisabled()`, `message()` |
+| 400 | all | rejected / invalid request | `ZatcaRequestException` (see below) |
+| 401 | all | wrong or missing credentials | `ZatcaRequestException` |
+| 406 | all | missing or wrong `Accept-Version` | `ZatcaRequestException` |
+| 409 | reporting | invoice already reported | `ZatcaRequestException` |
+| 428 | renewal | not compliant, compliance certificate issued | response, `isNotCompliant()` |
+| 500 | all | ZATCA internal error | `ZatcaRequestException` |
+
+Useful response helpers: `statusCode()`, `success()`, `errors()`, `warnings()`, `info()`, `validationStatus()`,
+`clearedInvoiceXml()` (clearance), `dispositionMessage()` and `tokenType()` (certificates).
+
+#### Response language
+
+ZATCA returns messages in English by default. Arabic can be requested per client:
+
+```php
+$arabicClient = $client->withLanguage('ar'); // Accept-Language: ar
 ```
 
 
@@ -321,4 +372,30 @@ The library throws the following exceptions which you can catch and handle:
 - `ZatcaException` — general exception class
 - `ZatcaRequestException` — errors during the HTTP request
 - `ZatcaResponseException` — errors processing the API response
+
+When ZATCA answers with an HTTP error (e.g. a rejected invoice), `ZatcaRequestException` gives access to the response:
+
+```php
+try {
+    $client->reportingInvoice($xml, $hash, $uuid);
+} catch (ZatcaRequestException $e) {
+    $e->statusCode(); // e.g. 400
+    $e->errors();     // validationResults.errorMessages for invoices, errors for certificate requests
+    $e->data();       // decoded JSON body
+    $e->response();   // PSR-7 response
+}
+```
+
+Alternatively, error responses with a JSON body (4xx) can be returned as typed responses instead of exceptions.
+Transport errors and 5xx responses are still thrown:
+
+```php
+$response = $client->withErrorResponses()->reportingInvoice($xml, $hash, $uuid);
+
+if (! $response->success()) {
+    $response->statusCode();        // 400, 409, ...
+    $response->errors();            // ZATCA validation errors
+    $response->isAlreadyReported(); // HTTP 409
+}
+```
 

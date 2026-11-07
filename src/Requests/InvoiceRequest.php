@@ -13,7 +13,7 @@ abstract class InvoiceRequest extends Request implements RequiresAuthTokenInterf
         parent::__construct($this->uri(), [
             'body' => [
                 'invoice' => base64_encode($invoice),
-                'hash' => $invoiceHash,
+                'invoiceHash' => $invoiceHash,
                 'uuid' => $uuid,
             ],
         ]);

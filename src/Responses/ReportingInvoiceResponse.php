@@ -26,4 +26,12 @@ class ReportingInvoiceResponse extends ValidationResponse
     {
         return $this->getOptionalAttribute('reportingStatus');
     }
+
+    /**
+     * True when ZATCA answered 409: the invoice was already reported earlier.
+     */
+    public function isAlreadyReported(): bool
+    {
+        return $this->statusCode() === 409;
+    }
 }

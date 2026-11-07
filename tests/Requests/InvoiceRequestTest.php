@@ -50,7 +50,7 @@ final class InvoiceRequestTest extends TestCase
 
         $options = $req->options();
 
-        $this->assertSame($hash, $options['body']['hash']);
+        $this->assertSame($hash, $options['body']['invoiceHash']);
         $this->assertSame($uuid, $options['body']['uuid']);
     }
 
@@ -80,7 +80,7 @@ final class InvoiceRequestTest extends TestCase
         $this->assertArrayHasKey('headers', $options);
 
         $this->assertArrayHasKey('invoice', $options['body']);
-        $this->assertArrayHasKey('hash', $options['body']);
+        $this->assertArrayHasKey('invoiceHash', $options['body']);
         $this->assertArrayHasKey('uuid', $options['body']);
     }
 

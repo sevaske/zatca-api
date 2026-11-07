@@ -33,7 +33,7 @@ class ValidationResponse extends ZatcaResponse
      */
     public function info(): array
     {
-        return (array) $this->validation()['infoMessages'];
+        return $this->messages('infoMessages', null);
     }
 
     /**
@@ -43,7 +43,7 @@ class ValidationResponse extends ZatcaResponse
      */
     public function warnings(): array
     {
-        return (array) $this->validation()['warningMessages'];
+        return $this->messages('warningMessages', 'warnings');
     }
 
     /**
@@ -53,7 +53,7 @@ class ValidationResponse extends ZatcaResponse
      */
     public function errors(): array
     {
-        return (array) $this->validation()['errorMessages'];
+        return $this->messages('errorMessages', 'errors');
     }
 
     /**
@@ -74,5 +74,34 @@ class ValidationResponse extends ZatcaResponse
     public function hasWarnings(): bool
     {
         return ! empty($this->warnings());
+    }
+
+    /**
+     * Normalizes a message list from validationResults; ZATCA may omit the key,
+     * return null, or return a single message object instead of a list.
+     * Falls back to a top-level key used by the legacy response format.
+     */
+    protected function messages(string $key, ?string $legacyKey = null): array
+    {
+        $validation = $this->validation();
+
+        if (array_key_exists($key, $validation)) {
+            $messages = $validation[$key];
+        } elseif ($legacyKey !== null) {
+            $messages = $this->getOptionalAttribute($legacyKey);
+        } else {
+            $messages = null;
+        }
+
+        if (! is_array($messages)) {
+            return [];
+        }
+
+        // a single message object (associative array) instead of a list
+        if ($messages !== [] && array_keys($messages) !== range(0, count($messages) - 1)) {
+            return [$messages];
+        }
+
+        return $messages;
     }
 }

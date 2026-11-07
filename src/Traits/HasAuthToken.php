@@ -6,7 +6,7 @@ use Sevaske\ZatcaApi\Interfaces\AuthTokenInterface;
 
 trait HasAuthToken
 {
-    protected ?AuthTokenInterface $authToken;
+    protected ?AuthTokenInterface $authToken = null;
 
     /**
      * @return $this

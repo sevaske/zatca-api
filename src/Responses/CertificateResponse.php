@@ -11,6 +11,28 @@ class CertificateResponse extends ZatcaResponse
         return $this->getOptionalAttribute('dispositionMessage') === 'ISSUED';
     }
 
+    /**
+     * ZATCA disposition message, e.g. "ISSUED" or "NOT_COMPLIANT".
+     */
+    public function dispositionMessage(): ?string
+    {
+        return $this->getOptionalAttribute('dispositionMessage');
+    }
+
+    /**
+     * True when ZATCA requires the compliance checks to be passed again (HTTP 428 on renewal).
+     * In this case the returned certificate is a compliance certificate.
+     */
+    public function isNotCompliant(): bool
+    {
+        return $this->dispositionMessage() === 'NOT_COMPLIANT';
+    }
+
+    public function tokenType(): ?string
+    {
+        return $this->getOptionalAttribute('tokenType');
+    }
+
     public function requestId(): ?int
     {
         if ($requestId = $this->getOptionalAttribute('requestID')) {

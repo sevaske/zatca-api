@@ -33,6 +33,14 @@ abstract class ZatcaResponse implements ZatcaResponseInterface
         return $this->response;
     }
 
+    /**
+     * HTTP status code of the response (e.g. 200, 202, 208, 303, or 4xx when error responses are returned).
+     */
+    public function statusCode(): int
+    {
+        return $this->response->getStatusCode();
+    }
+
     public function errors(): array
     {
         return [];
