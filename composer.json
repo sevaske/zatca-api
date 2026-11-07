@@ -1,7 +1,53 @@
 {
     "name": "sevaske/zatca-api",
+    "description": "Framework-agnostic PHP client for the ZATCA (Fatoora) e-invoicing API of Saudi Arabia: CSID onboarding and renewal, compliance checks, reporting and clearance, PSR-18 compatible.",
     "type": "library",
     "license": "MIT",
+    "keywords": [
+        "zatca",
+        "fatoora",
+        "e-invoicing",
+        "einvoice",
+        "saudi arabia",
+        "ksa",
+        "reporting",
+        "clearance",
+        "csid",
+        "api",
+        "client",
+        "psr-18"
+    ],
+    "homepage": "https://github.com/sevaske/zatca-api",
+    "support": {
+        "issues": "https://github.com/sevaske/zatca-api/issues",
+        "source": "https://github.com/sevaske/zatca-api"
+    },
+    "authors": [
+        {
+            "name": "sevaske",
+            "email": "sevachello@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^7.4 || ^8.0",
+        "ext-dom": "*",
+        "ext-json": "*",
+        "php-http/discovery": "^1.15",
+        "psr/http-client": "^1.0",
+        "psr/http-factory": "^1.0",
+        "psr/http-message": "^1.0 || ^2.0"
+    },
+    "require-dev": {
+        "nyholm/psr7": "^1.8",
+        "php-http/mock-client": "^1.6",
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^9.6"
+    },
+    "suggest": {
+        "guzzlehttp/guzzle": "A popular PSR-18 HTTP client implementation",
+        "symfony/http-client": "A PSR-18 HTTP client implementation (requires nyholm/psr7)",
+        "sevaske/php-zatca-xml": "Generates and signs ZATCA XML invoices to submit with this client"
+    },
     "autoload": {
         "psr-4": {
             "Sevaske\\ZatcaApi\\": "src/"
@@ -9,37 +55,34 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Tests\\": "tests/"
+            "Sevaske\\ZatcaApi\\Tests\\": "tests/"
         }
-    },
-    "authors": [
-        {
-            "name": "sevaske"
-        }
-    ],
-    "require": {
-        "php": "^7.4||^8.0",
-        "ext-json": "*",
-        "psr/http-client": "^1.0",
-        "psr/http-factory": "^1.0",
-        "psr/http-message": "^1.0||^2.0",
-        "sevaske/support": "^1.0"
-    },
-    "require-dev": {
-        "guzzlehttp/guzzle": "^7.9",
-        "laravel/pint": "^1.0",
-        "phpstan/phpstan": "^2.1",
-        "phpunit/phpunit": "^9.6"
     },
     "scripts": {
-        "test": "phpunit --testdox",
-        "stan": "phpstan analyse"
+        "test": "phpunit",
+        "analyse": "phpstan analyse --memory-limit=512M",
+        "pint:install": "@composer --working-dir=tools/pint install --no-interaction",
+        "format": "tools/pint/vendor/bin/pint src tests",
+        "format:check": "tools/pint/vendor/bin/pint --test src tests",
+        "check": [
+            "@analyse",
+            "@test"
+        ]
+    },
+    "scripts-descriptions": {
+        "test": "Run PHPUnit tests",
+        "analyse": "Run PHPStan static analysis",
+        "pint:install": "Install Laravel Pint into tools/pint (requires PHP 8.3+)",
+        "format": "Format the code with Laravel Pint",
+        "format:check": "Check code style with Laravel Pint without changing files",
+        "check": "Run static analysis and tests"
     },
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "allow-plugins": {
+            "php-http/discovery": false
+        }
     },
-    "prefer-stable": true,
-    "support": {
-        "source": "https://github.com/sevaske/zatca-api"
-    }
+    "minimum-stability": "stable",
+    "prefer-stable": true
 }

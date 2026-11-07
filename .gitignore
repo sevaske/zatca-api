@@ -1,2 +1,12 @@
-composer.lock
-.phpunit.result.cache
+/vendor/
+/composer.lock
+/.phpunit.cache/
+/.phpunit.result.cache
+/build/
+/.idea/
+/.vscode/
+/phpunit.xml
+/phpstan.neon
+.DS_Store
+/tools/*/vendor/
+/tools/*/composer.lock

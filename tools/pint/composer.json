@@ -1,0 +1,13 @@
+{
+    "name": "sevaske/zatca-api-tools-pint",
+    "description": "Isolated Laravel Pint install: Pint requires PHP 8.3+, while the library supports PHP 7.4+.",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": "^8.3",
+        "laravel/pint": "^1.24"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

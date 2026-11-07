@@ -1,401 +1,326 @@
-<p align="center">
-<img src="https://badgen.net/packagist/php/sevaske/zatca-api" alt="php Version">
-<a href="https://packagist.org/packages/sevaske/zatca-api"><img alt="Packagist Stars" src="https://img.shields.io/packagist/stars/sevaske/zatca-api"></a>
-<a href="https://packagist.org/packages/sevaske/zatca-api"><img alt="Packagist Downloads" src="https://img.shields.io/packagist/dt/sevaske/zatca-api"></a>
-<a href="https://packagist.org/packages/sevaske/zatca-api"><img alt="Packagist Version" src="https://img.shields.io/packagist/v/sevaske/zatca-api"></a>
-<a href="https://packagist.org/packages/sevaske/zatca-api"><img alt="License" src="https://img.shields.io/badge/License-MIT-yellow.svg"></a>
-</p>
+# ZATCA E-Invoicing API PHP Client
 
-# ZATCA API PHP Client
+[![CI](https://github.com/sevaske/zatca-api/actions/workflows/ci.yml/badge.svg)](https://github.com/sevaske/zatca-api/actions/workflows/ci.yml)
+[![Latest Version](https://img.shields.io/packagist/v/sevaske/zatca-api.svg)](https://packagist.org/packages/sevaske/zatca-api)
+[![PHP Version](https://img.shields.io/packagist/php-v/sevaske/zatca-api.svg)](https://packagist.org/packages/sevaske/zatca-api)
+[![License](https://img.shields.io/packagist/l/sevaske/zatca-api.svg)](LICENSE.md)
 
-This is a simple PHP library to work with the ZATCA API. You can send invoice data and manage certificates easily.
+A framework-agnostic PHP client for the e-invoicing API of [ZATCA](https://zatca.gov.sa) (Fatoora), Saudi Arabia.
+Covers every endpoint of the API: onboarding (compliance and production CSIDs, renewal), compliance checks,
+reporting and clearance.
 
-⚠️ **Note:** This is an unofficial library and not maintained by ZATCA. I do not provide personal support or consulting.
+- Onboarding of an EGS unit: compliance CSID, compliance checks, production CSID, renewal
+- Reporting (B2C) and clearance (B2B) of invoices, credit and debit notes
+- Validation outcomes are **results, not exceptions**: rejected, already reported, cleared with warnings, ...
+- Typed credentials: a compliance CSID cannot be used where a production CSID is required
+- `SignedInvoice::fromXml()` reads the UUID and computes the invoice hash exactly like ZATCA
+- Works with **any PSR-18 HTTP client** (Guzzle, Symfony HttpClient, ...), auto-discovered
+- PHP 7.4 – 8.5, no framework dependencies, PHPStan level max
 
-If you’re looking for a library to generate XML invoices, you can use this one: https://github.com/sevaske/php-zatca-xml
+> This is an unofficial, community-maintained library and is not affiliated with ZATCA.
+> To generate and sign the invoice XML, see [sevaske/php-zatca-xml](https://github.com/sevaske/php-zatca-xml).
 
----
+## Installation
 
-## Features
+```bash
+composer require sevaske/zatca-api
+```
 
-- Full coverage of ZATCA API endpoints (reporting, clearance, compliance, production certificate onboarding and renewal)
-- Authentication via certificate and secret or auth token
-- Supports middleware for request/response processing
-- Typed response objects for easy validation and error handling
-- Supports multiple environments: sandbox, simulation, production
-- Follows PSR standards (PSR-4, PSR-7, PSR-17, PSR-18)
-- Works with any PSR-18 compatible HTTP client (e.g., Guzzle)
+The library talks HTTP through [PSR-18](https://www.php-fig.org/psr/psr-18/). If your project has no PSR-18 client yet, install one, for example:
 
+```bash
+composer require guzzlehttp/guzzle
+```
+
+## Quick start
+
+```php
+use Sevaske\ZatcaApi\Client;
+use Sevaske\ZatcaApi\Credentials\ProductionCsid;
+use Sevaske\ZatcaApi\Invoice\SignedInvoice;
+
+$zatca = Client::production();
+$csid = ProductionCsid::fromArray($savedCredentials); // see "Onboarding"
+
+$result = $zatca->invoices($csid)->report(SignedInvoice::fromXml($signedXml));
+
+if ($result->isReported()) {
+    // accepted (possibly with warnings: $result->hasWarnings())
+} else {
+    foreach ($result->getValidationResults()->getErrorMessages() as $error) {
+        echo $error->getCode(), ': ', $error->getMessage(), PHP_EOL; // "BR-KSA-37: The seller address ..."
+    }
+}
+```
 
 ## Environments
 
-| Environment  | Purpose                          | Certificates        |
-|-------------|----------------------------------|---------------------|
-| sandbox     | CSR + basic testing              | Sandbox certificate |
-| simulation  | Compliance invoices (6 required) | Compliance cert     |
-| production  | Real invoices                    | Production cert     |
-
-
-## Invoice types
-
-- **Reporting (B2P)**  
-  Used for invoices issued to consumers.
-
-- **Clearance (B2B)**  
-  Used for invoices issued to VAT-registered businesses.
-
-
-## Authentication flow
-
-1. Generate CSR (outside this library)
-2. Request compliance certificate
-3. Create `ZatcaAuth` from certificate + secret
-4. Submit simulation invoices
-5. Request production certificate
-6. Switch client to `production` environment
-
-
-## Immutability
-
-Methods like `withEnvironment()`, `withMiddleware()`, `withLanguage()` and `withErrorResponses()` return a **new client instance**.  
-The original client is not modified.
-
-
-## Installation
-```bash
-composer require sevaske/zatca-api:^2.0
-```
-
-## Usage
-
-#### Client Initialization
-
-Create HTTP client and factories for PSR-17 / PSR-18. For example, GuzzleHttp
-
-```php
-use GuzzleHttp\Client;
-use GuzzleHttp\Psr7\HttpFactory;
-use Sevaske\ZatcaApi\ZatcaClient;
-
-$httpClient = new Client();
-$factory = new HttpFactory();
-
-// Initialize ZatcaClient with sandbox environment
-$client = new ZatcaClient(
-    $httpClient,
-    $factory, // RequestFactoryInterface
-    $factory, // StreamFactoryInterface
-    'sandbox' // environment: sandbox | simulation | production
-);
-```
-
-#### Compliance Certificate Request
-
-```php
-use Sevaske\ZatcaApi\Exceptions\ZatcaRequestException;
-use Sevaske\ZatcaApi\Exceptions\ZatcaResponseException;
-
-/**
-* @var Sevaske\ZatcaApi\ZatcaClient $client 
-*/
-
-try {
-    $certificateResponse = $client->complianceCertificate('your .csr file content', '112233');
-} catch (ZatcaRequestException|ZatcaResponseException $e) {
-    // handle
-}
-
-$credentials = [
-    'requestId' => $certificateResponse->requestId(),
-    'certificate' => $certificateResponse->certificate(),
-    'secret' => $certificateResponse->secret(),
-];
-
-print_r($credentials);
-file_put_contents('output/credentials.json', json_encode($credentials, JSON_PRETTY_PRINT));
-```
-
-#### Authorized requests
-
-Create AuthToken from compliance certificate to make authorized requests.
-
-```php
-use Sevaske\ZatcaApi\ZatcaAuth;
-
-/**
-* @var Sevaske\ZatcaApi\Responses\CertificateResponse $certificateResponse
-* @var Sevaske\ZatcaApi\ZatcaClient $client
-*/
-
-$authToken = new ZatcaAuth($certificateResponse->certificate(), $certificateResponse->secret());
-$client->setAuthToken($authToken);
-```
-
-#### Submitting Invoices
-
-Once you have a valid compliance certificate and auth token, you can submit invoices in the simulation environment.
-
-**Submitting 6 documents is required to switch to production mode.**
-
-
-```php
-use Sevaske\ZatcaApi\Exceptions\ZatcaRequestException;
-use Sevaske\ZatcaApi\Exceptions\ZatcaResponseException;
-
-/**
-* @var Sevaske\ZatcaApi\ZatcaClient $client
-*/
-
-try {
-    // B2P
-    $client->reportingInvoice('b2p invoice xml', 'hash', 'uuid');
-    $client->reportingInvoice('b2p debit note xml', 'hash', 'uuid');
-    $client->reportingInvoice('b2p credit note xml', 'hash', 'uuid');
-
-    // B2B
-    $client->clearanceInvoice('b2b invoice xml', 'hash', 'uuid');
-    $client->clearanceInvoice('b2b debit note xml', 'hash', 'uuid');
-    $client->clearanceInvoice('b2b credit note xml', 'hash', 'uuid');
-} catch (ZatcaRequestException|ZatcaResponseException $e) {
-    // handle
-}
-```
-
-The required `Clearance-Status` header is sent automatically: `1` for clearance. For reporting it defaults to `1`
-(clearance enabled for the taxpayer); pass `false` as the fourth argument when clearance is disabled:
-
-```php
-$client->reportingInvoice('b2b invoice xml', 'hash', 'uuid', false); // Clearance-Status: 0
-```
-
-#### Production Onboarding
-
-After submitting the required simulation invoices, you can request a production certificate.
-
-**This certificate allows you to submit real invoices in the production environment.**
-
-```php
-use Sevaske\ZatcaApi\Exceptions\ZatcaRequestException;
-use Sevaske\ZatcaApi\Exceptions\ZatcaResponseException;
-
-/**
-* @var \Sevaske\ZatcaApi\ZatcaClient $client
-*/
-
-try {
-    $productionCertificateResponse = $client->productionCertificate($certificateResponse->requestId());
-    
-    $credentials = [
-        'requestId' => $productionCertificateResponse->requestId(),
-        'certificate' => $productionCertificateResponse->certificate(),
-        'secret' => $productionCertificateResponse->secret(),
-    ];
-
-    // display
-    print_r($credentials);
-
-    // save
-    file_put_contents('output/production-credentials.json', json_encode($credentials, JSON_PRETTY_PRINT));
-} catch (ZatcaRequestException|ZatcaResponseException $e) {
-    // handle
-}
-```
-
-#### Submitting Production Invoices
-
-Once the client is configured with the production certificate and environment, you can submit real invoices to ZATCA.
-
-```php
-use Sevaske\ZatcaApi\ZatcaAuth;
-use Sevaske\ZatcaApi\Exceptions\ZatcaRequestException;
-use Sevaske\ZatcaApi\Exceptions\ZatcaResponseException;
-
-/**
-* @var Sevaske\ZatcaApi\ZatcaClient $client
-* @var Sevaske\ZatcaApi\Responses\ProductionCertificateResponse $productionCertificateResponse
-*/
-$productionClient = $client->withEnvironment('production');
-$productionAuth = new ZatcaAuth($productionCertificateResponse->certificate(), $productionCertificateResponse->secret());
-$productionClient->setAuthToken($productionAuth);
-
-try {
-    // submitting production invoices
-    $responseReporting = $productionClient->reportingInvoice('my real B2P invoice xml', 'hash', 'uuid');
-    $responseClearance = $productionClient->clearanceInvoice('my real B2B invoice xml', 'hash', 'uuid');
-} catch (ZatcaRequestException|ZatcaResponseException $e) {
-    // handle
-}
-
-print_r($responseReporting->toArray());
-print_r($responseClearance->toArray());
-
-```
-
-#### Renewing the Production Certificate
-
-Renewal is authorized by the **current** production certificate and requires a renewal OTP from the Fatoora portal and a new CSR.
-
-```php
-/**
-* @var Sevaske\ZatcaApi\ZatcaClient $productionClient  authorized with the current production certificate
-*/
-$renewal = $productionClient->renewProductionCertificate($newCsr, $otp);
-
-if ($renewal->success()) {
-    $newAuth = new ZatcaAuth($renewal->certificate(), $renewal->secret());
-} elseif ($renewal->isNotCompliant()) {
-    // HTTP 428: ZATCA issued a compliance certificate, pass the compliance checks again
-    // and then request a production certificate with $renewal->requestId()
-}
-```
-
-#### Response status codes
-
-| Status | Endpoint | Meaning | Library behaviour |
+| Environment | Constructor | Base URI | Use |
 |---|---|---|---|
-| 200 | all | success | response |
-| 202 | reporting, clearance | accepted with warnings | response, `hasWarnings()` |
-| 208 | clearance | invoice hash submitted before, cleared invoice returned | response, `success()` |
-| 303 | clearance | clearance is deactivated, use reporting | response, `isClearanceDisabled()`, `message()` |
-| 400 | all | rejected / invalid request | `ZatcaRequestException` (see below) |
-| 401 | all | wrong or missing credentials | `ZatcaRequestException` |
-| 406 | all | missing or wrong `Accept-Version` | `ZatcaRequestException` |
-| 409 | reporting | invoice already reported | `ZatcaRequestException` |
-| 428 | renewal | not compliant, compliance certificate issued | response, `isNotCompliant()` |
-| 500 | all | ZATCA internal error | `ZatcaRequestException` |
+| Sandbox | `Client::sandbox()` | `.../e-invoicing/developer-portal` | Integration Sandbox: mock responses, public test OTPs |
+| Simulation | `Client::simulation()` | `.../e-invoicing/simulation` | real validation, OTPs from the Fatoora simulation portal |
+| Production | `Client::production()` | `.../e-invoicing/core` | real invoices |
 
-Useful response helpers: `statusCode()`, `success()`, `errors()`, `warnings()`, `info()`, `validationStatus()`,
-`clearedInvoiceXml()` (clearance), `dispositionMessage()` and `tokenType()` (certificates).
+`new Client(Environment::SIMULATION, $options)` is equivalent to `Client::simulation($options)`.
 
-#### Response language
+In the sandbox, OTP `123345` issues a compliance CSID and OTP `123456` renews a production CSID
+(`111111` is an invalid OTP, `222222` an expired one).
 
-ZATCA returns messages in English by default. Arabic can be requested per client:
+## Onboarding
+
+Every EGS unit (device or solution instance that issues invoices) is onboarded once:
 
 ```php
-$arabicClient = $client->withLanguage('ar'); // Accept-Language: ar
+use Sevaske\ZatcaApi\Client;
+use Sevaske\ZatcaApi\Invoice\SignedInvoice;
+
+$zatca = Client::simulation();
+
+// 1. Compliance CSID for your CSR. The OTP is generated in the Fatoora portal.
+$complianceCsid = $zatca->onboarding()
+    ->requestComplianceCsid($csrPem, $otp)
+    ->toComplianceCsid();
+
+// 2. Compliance checks: one signed sample of every document type the unit will issue
+//    (standard / simplified invoice, credit note, debit note), signed with $complianceCsid->getCertificate().
+foreach ($sampleXmls as $xml) {
+    $check = $zatca->compliance($complianceCsid)->checkInvoice(SignedInvoice::fromXml($xml));
+
+    if (!$check->isPassed()) {
+        // see $check->getValidationResults()
+    }
+}
+
+// 3. Production CSID
+$productionCsid = $zatca->onboarding()
+    ->requestProductionCsid($complianceCsid)
+    ->toProductionCsid();
+
+// Save the credentials and the private key of the CSR.
+file_put_contents('production-csid.json', json_encode($productionCsid->toArray()));
 ```
 
+The CSR may be passed as PEM text or as the base64 of it. Credentials are restored with
+`ComplianceCsid::fromArray()` / `ProductionCsid::fromArray()`. `getCertificate()` returns the certificate
+(base64 DER) used to sign invoices, `getCertificatePem()` the same in PEM format.
 
-## Middleware
+### Renewal
 
-Middleware in `ZatcaClient` allows you to inspect, modify, or wrap HTTP requests and responses. It works as a pipeline, meaning that multiple middleware can be chained together, each receiving the request and a `$next` callable that continues to the next middleware and ultimately to the HTTP client.
-
-`ZatcaClient` provides four ways to manage middleware:
-
-1. **`withMiddleware($middleware)`** – returns a **new cloned instance** with the provided middleware. Existing middleware in the original client is **replaced** in the clone.
-2. **`setMiddleware($middleware)`** – **mutates the current instance**, replacing its middleware with the given ones.
-3. **`attachMiddleware($middleware)`** – **mutates the current instance**, adding the given middleware to the end of the existing middleware stack.
-4. **`withoutMiddleware()`** - returns a **new cloned instance** with no middleware attached.
-
-
-All middleware must implement the `MiddlewareInterface`:
+A production CSID is renewed with a new CSR and a renewal OTP, authorized by the current CSID:
 
 ```php
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
+$renewal = $zatca->onboarding()->renewProductionCsid($productionCsid, $newCsrPem, $otp);
 
-interface MiddlewareInterface
-{
-    /**
-     * @param RequestInterface $request The incoming request
-     * @param callable $next Callable to forward the request to the next middleware or the HTTP client
-     * @return ResponseInterface
-     */
-    public function handle(RequestInterface $request, callable $next): ResponseInterface;
+if ($renewal->isIssued()) {
+    $productionCsid = $renewal->toProductionCsid();
+} elseif ($renewal->isNotCompliant()) {
+    // HTTP 428: ZATCA issued a compliance CSID instead. Pass the compliance checks again
+    // with $renewal->toComplianceCsid(), then request a production CSID.
 }
 ```
 
-#### Example
+## Signed invoices
 
-For example, implementation of "logging" requests and responses:
+`SignedInvoice` is what the compliance, reporting and clearance endpoints accept:
 
 ```php
+use Sevaske\ZatcaApi\Invoice\SignedInvoice;
 
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
-use Sevaske\ZatcaApi\Interfaces\MiddlewareInterface;
+// UUID read from cbc:UUID, hash computed from the XML the same way ZATCA does
+$invoice = SignedInvoice::fromXml($signedXml);
 
-// Attach a custom middleware to inspect requests and responses
-$client = $client->withMiddleware(new class implements MiddlewareInterface
-{
-    public function handle(RequestInterface $request, callable $next): ResponseInterface
-    {
-        // request
-        $this->info('URL: ');
-        $this->info((string) $request->getUri());
-        $this->info('Body: ');
-        $this->info($this->safeStreamContents($request->getBody()));
-
-        /**
-         * @var $response \Psr\Http\Message\ResponseInterface
-         */
-        $response = $next($request);
-
-        // response
-        $this->info('Response:');
-        $this->info($this->safeStreamContents($response->getBody()));
-
-        return $response;
-    }
-
-    private function safeStreamContents(\Psr\Http\Message\StreamInterface $stream): string
-    {
-        if (! $stream->isSeekable()) {
-            return '[unseekable stream]';
-        }
-
-        // Save original cursor position
-        $pos = $stream->tell();
-
-        // Read from beginning
-        $stream->rewind();
-        $content = $stream->getContents();
-
-        // Restore original cursor
-        $stream->seek($pos);
-
-        return $content;
-    }
-
-    private function info(string $text): void
-    {
-        echo "\n\r".$text;
-    }
-});
+// or given explicitly, e.g. from your signer
+$invoice = new SignedInvoice($signedXml, $invoiceHash, $uuid);
 ```
 
-
-## Exception handling
-
-The library throws the following exceptions which you can catch and handle:
-
-- `ZatcaException` — general exception class
-- `ZatcaRequestException` — errors during the HTTP request
-- `ZatcaResponseException` — errors processing the API response
-
-When ZATCA answers with an HTTP error (e.g. a rejected invoice), `ZatcaRequestException` gives access to the response:
+With [sevaske/php-zatca-xml](https://github.com/sevaske/php-zatca-xml):
 
 ```php
+$signed = Saleh7\Zatca\InvoiceSigner::signInvoice($xml, $certificate);
+$invoice = new SignedInvoice($signed->getXML(), $signed->getHash(), $uuid);
+```
+
+## Reporting and clearance
+
+```php
+$invoices = $zatca->invoices($productionCsid);
+
+// Simplified (B2C) documents: report within 24 hours of issuing
+$reporting = $invoices->report($invoice);
+
+// Standard (B2B) documents: clear before handing over to the buyer
+$clearance = $invoices->clear($invoice);
+
+if ($clearance->isCleared()) {
+    $stampedXml = $clearance->getClearedInvoice(); // hand this document over to the buyer
+}
+```
+
+Every validation outcome is returned as a result:
+
+| HTTP | Endpoint | Meaning | Result |
+|---|---|---|---|
+| 200 | both | accepted | `isReported()` / `isCleared()` |
+| 202 | both | accepted with warnings | `hasWarnings()` |
+| 208 | clearance | cleared before, cleared invoice returned again | `isAlreadyCleared()` |
+| 303 | clearance | clearance is deactivated, use reporting | `isClearanceDisabled()`, `getMessage()` |
+| 303 | reporting | standard invoice sent to reporting while clearance is active | `isClearanceRequired()` |
+| 400 | both | rejected, see validation results | `isReported()` / `isCleared()` is false |
+| 409 | reporting | already reported | `isAlreadyReported()` |
+
+Reporting requests carry the required `Clearance-Status` header: `1` by default. While clearance is
+deactivated for the taxpayer, standard invoices are reported too; configure it with
+`ClientOptions::withClearanceEnabled(false)` (`Clearance-Status: 0`).
+
+### Validation results
+
+```php
+$validation = $result->getValidationResults();
+
+$validation->getStatus();          // "PASS", "WARNING" or "ERROR"
+$validation->isPassed();
+$validation->getErrorMessages();   // list of ValidationMessage
+$validation->getWarningMessages();
+$validation->getInfoMessages();
+$validation->getErrorCodes();      // ["BR-KSA-37", "invalid-invoice-hash"]
+
+$message = $validation->getErrorMessages()[0];
+$message->getCode();      // "BR-KSA-37"
+$message->getCategory();  // "KSA", "EN_16931", "XSD validation", "QRCODE_VALIDATION", ...
+$message->getMessage();   // in English, or Arabic with ClientOptions::withLanguage('ar')
+```
+
+`getData()` on every result returns the decoded response body.
+
+## Error handling
+
+Every exception thrown by the library implements `Sevaske\ZatcaApi\Exception\ZatcaException`.
+
+```
+ZatcaException (interface)
+├── InvalidArgumentException      invalid input (CSR, OTP, invoice, credentials), thrown before any request
+├── ConfigurationException        no PSR-18 client / PSR-17 factory found
+├── TransportException            network error; it is unknown whether ZATCA received the request
+└── ApiException                  ZATCA returned an error
+    ├── BadRequestException         400 on CSID requests, e.g. Invalid-OTP, Invalid-CSR, Missing-ComplianceSteps
+    ├── AuthenticationException     401, wrong CSID or a compliance CSID used in production
+    ├── ForbiddenException          403
+    ├── NotAcceptableException      406, unsupported Accept-Version
+    ├── RateLimitException          429
+    ├── ServerException             5xx
+    └── UnexpectedResponseException the response could not be understood
+```
+
+```php
+use Sevaske\ZatcaApi\Exception\ApiException;
+use Sevaske\ZatcaApi\Exception\AuthenticationException;
+use Sevaske\ZatcaApi\Exception\TransportException;
+
 try {
-    $client->reportingInvoice($xml, $hash, $uuid);
-} catch (ZatcaRequestException $e) {
-    $e->statusCode(); // e.g. 400
-    $e->errors();     // validationResults.errorMessages for invoices, errors for certificate requests
-    $e->data();       // decoded JSON body
-    $e->response();   // PSR-7 response
+    $result = $zatca->invoices($csid)->report($invoice);
+} catch (AuthenticationException $e) {
+    // check the CSID
+} catch (ApiException $e) {
+    $e->getStatusCode();   // e.g. 500
+    $e->getErrors();       // list of ApiError (code, message, category)
+    $e->getResponseData(); // decoded error body
+    $e->getResponse();     // PSR-7 response
+    $e->getRequest();      // PSR-7 request, Authorization and OTP headers redacted
+} catch (TransportException $e) {
+    // timeout / DNS / connection error: resubmitting the same invoice is safe,
+    // ZATCA identifies invoices by their hash
 }
 ```
 
-Alternatively, error responses with a JSON body (4xx) can be returned as typed responses instead of exceptions.
-Transport errors and 5xx responses are still thrown:
+## Configuration
+
+All options are optional. Anything you don't set is discovered automatically.
 
 ```php
-$response = $client->withErrorResponses()->reportingInvoice($xml, $hash, $uuid);
+use Sevaske\ZatcaApi\Client;
+use Sevaske\ZatcaApi\ClientOptions;
 
-if (! $response->success()) {
-    $response->statusCode();        // 400, 409, ...
-    $response->errors();            // ZATCA validation errors
-    $response->isAlreadyReported(); // HTTP 409
+$options = ClientOptions::create()
+    ->withHttpClient($psr18Client)       // e.g. Guzzle with your timeouts / proxy / retry middleware
+    ->withRequestFactory($psr17Factory)
+    ->withStreamFactory($psr17Factory)
+    ->withLanguage('ar')                 // language of validation messages: "en" (default) or "ar"
+    ->withClearanceEnabled(true)         // Clearance-Status of reporting requests (default true)
+    ->withBaseUri('https://proxy.example.com/zatca') // overrides the environment's base URI
+    ->withUserAgent('MyErp/1.0');
+
+$zatca = Client::production($options);
+```
+
+Example with Guzzle timeouts:
+
+```php
+$zatca = Client::production(ClientOptions::create()->withHttpClient(
+    new GuzzleHttp\Client(['timeout' => 30, 'connect_timeout' => 10])
+));
+```
+
+## Testing your application
+
+Type-hint `Sevaske\ZatcaApi\Contracts\InvoiceSubmitter` in your services. `Client::invoices()` implements it,
+so you can replace it with a fake in tests:
+
+```php
+use Sevaske\ZatcaApi\Contracts\InvoiceSubmitter;
+use Sevaske\ZatcaApi\Invoice\SignedInvoice;
+use Sevaske\ZatcaApi\Response\ClearanceResult;
+use Sevaske\ZatcaApi\Response\ReportingResult;
+
+final class FakeInvoiceSubmitter implements InvoiceSubmitter
+{
+    /** @var list<SignedInvoice> */
+    public array $submitted = [];
+
+    public function report(SignedInvoice $invoice): ReportingResult
+    {
+        $this->submitted[] = $invoice;
+
+        return ReportingResult::fromArray(['reportingStatus' => 'REPORTED']);
+    }
+
+    public function clear(SignedInvoice $invoice): ClearanceResult
+    {
+        $this->submitted[] = $invoice;
+
+        return ClearanceResult::fromArray(['clearanceStatus' => 'CLEARED', 'clearedInvoice' => base64_encode($invoice->getXml())]);
+    }
 }
 ```
 
+You can also inject a mock PSR-18 client, such as [`php-http/mock-client`](https://github.com/php-http/mock-client),
+via `ClientOptions::withHttpClient()`.
+
+## Upgrading from 2.x
+
+See [UPGRADE.md](UPGRADE.md).
+
+## Development
+
+```bash
+composer install
+composer test           # PHPUnit
+composer analyse        # PHPStan (level max)
+```
+
+Code style is enforced with [Laravel Pint](https://laravel.com/docs/pint) (PER Coding Style, see `pint.json`).
+Pint requires PHP 8.3+, so it lives in its own `tools/pint` directory and does not affect the library's
+PHP 7.4+ dependencies:
+
+```bash
+composer pint:install   # once
+composer format         # fix code style
+composer format:check   # check only (runs in CI)
+```
+
+## Contributing
+
+Pull requests are welcome. Please add tests for your changes and make sure `composer check` and `composer format:check` pass.
+
+## License
+
+The MIT License (MIT). See [LICENSE.md](LICENSE.md).
