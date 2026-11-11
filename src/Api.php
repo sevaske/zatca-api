@@ -15,6 +15,7 @@ use Sevaske\ZatcaApi\Responses\ComplianceResponse;
 use Sevaske\ZatcaApi\Responses\ProductionCertificateResponse;
 use Sevaske\ZatcaApi\Responses\RenewalProductionCertificateResponse;
 use Sevaske\ZatcaApi\Responses\ReportingResponse;
+use Sevaske\ZatcaApi\Responses\ZatcaResponse;
 use Sevaske\ZatcaApi\Traits\RequestBuilder;
 
 class Api
@@ -61,7 +62,7 @@ class Api
             endpoint: ZatcaEndpointEnum::Reporting->value,
             payload: [
                 'invoice' => base64_encode($signedInvoice),
-                'invoiceHash' => $this->normalizeInvoiceHash($invoiceHash),
+                'invoiceHash' => $this->normalizeInvoiceHash($invoiceHash, $signedInvoice),
                 'uuid' => $uuid,
             ],
             headers: [
@@ -72,13 +73,7 @@ class Api
         );
         $response = new ReportingResponse($rawResponse);
 
-        if ($response->errors()) {
-            throw new ZatcaRequestException('Request failed.', [
-                'errors' => $response->errors(),
-            ]);
-        }
-
-        return $response;
+        return $this->ensureNoErrors($response);
     }
 
     /**
@@ -91,7 +86,7 @@ class Api
             endpoint: ZatcaEndpointEnum::Clearance->value,
             payload: [
                 'invoice' => base64_encode($signedInvoice),
-                'invoiceHash' => $this->normalizeInvoiceHash($invoiceHash),
+                'invoiceHash' => $this->normalizeInvoiceHash($invoiceHash, $signedInvoice),
                 'uuid' => $uuid,
             ],
             headers: [
@@ -102,13 +97,7 @@ class Api
         );
         $response = new ClearanceResponse($rawResponse);
 
-        if ($response->errors()) {
-            throw new ZatcaRequestException('Request failed.', [
-                'errors' => $response->errors(),
-            ]);
-        }
-
-        return $response;
+        return $this->ensureNoErrors($response);
     }
 
     /**
@@ -123,7 +112,7 @@ class Api
             endpoint: ZatcaEndpointEnum::Compliance->value,
             payload: [
                 'invoice' => base64_encode($signedInvoice),
-                'invoiceHash' => $this->normalizeInvoiceHash($invoiceHash),
+                'invoiceHash' => $this->normalizeInvoiceHash($invoiceHash, $signedInvoice),
                 'uuid' => $uuid,
             ],
             authToken: true,
@@ -132,13 +121,7 @@ class Api
 
         $response = new ComplianceResponse($rawResponse);
 
-        if ($response->errors()) {
-            throw new ZatcaRequestException('Request failed.', [
-                'errors' => $response->errors(),
-            ]);
-        }
-
-        return $response;
+        return $this->ensureNoErrors($response);
     }
 
     /**
@@ -156,13 +139,7 @@ class Api
         );
         $response = new ComplianceCertificateResponse($rawResponse);
 
-        if ($response->errors()) {
-            throw new ZatcaRequestException('Request failed.', [
-                'errors' => $response->errors(),
-            ]);
-        }
-
-        return $response;
+        return $this->ensureNoErrors($response);
     }
 
     /**
@@ -180,13 +157,7 @@ class Api
 
         $response = new ProductionCertificateResponse($rawResponse);
 
-        if ($response->errors()) {
-            throw new ZatcaRequestException('Request failed.', [
-                'errors' => $response->errors(),
-            ]);
-        }
-
-        return $response;
+        return $this->ensureNoErrors($response);
     }
 
     /**
@@ -211,13 +182,7 @@ class Api
 
         $response = new RenewalProductionCertificateResponse($rawResponse);
 
-        if ($response->errors()) {
-            throw new ZatcaRequestException('Request failed.', [
-                'errors' => $response->errors(),
-            ]);
-        }
-
-        return $response;
+        return $this->ensureNoErrors($response);
     }
 
     /**
@@ -233,8 +198,47 @@ class Api
         ];
     }
 
-    private function normalizeInvoiceHash(?string $invoiceHash): string
+    /**
+     * @template T of ZatcaResponse
+     *
+     * @param  T  $response
+     * @return T
+     *
+     * @throws ZatcaRequestException When ZATCA reports errors.
+     */
+    private function ensureNoErrors(ZatcaResponse $response): ZatcaResponse
     {
-        return $invoiceHash ?: base64_encode('0');
+        $errors = $response->errors();
+
+        if ($errors) {
+            $context = ['errors' => $errors];
+
+            if ($response->statusCode() !== null) {
+                $context['status'] = $response->statusCode();
+            }
+
+            throw new ZatcaRequestException('Request failed.', $context);
+        }
+
+        return $response;
+    }
+
+    /**
+     * When the hash is not passed, it is taken from the signature of the signed invoice
+     * (the digest of the "invoiceSignedData" reference).
+     */
+    private function normalizeInvoiceHash(?string $invoiceHash, string $signedInvoice = ''): string
+    {
+        if ($invoiceHash) {
+            return $invoiceHash;
+        }
+
+        $pattern = '/<(?:\w+:)?Reference\b[^>]*\bId="invoiceSignedData"[^>]*>.*?<(?:\w+:)?DigestValue>\s*([^<\s]+)\s*</s';
+
+        if (preg_match($pattern, $signedInvoice, $matches) === 1) {
+            return $matches[1];
+        }
+
+        return base64_encode('0');
     }
 }

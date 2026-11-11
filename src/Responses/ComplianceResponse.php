@@ -4,6 +4,15 @@ namespace Sevaske\ZatcaApi\Responses;
 
 class ComplianceResponse extends ValidationResponse
 {
+    /**
+     * Determines whether the invoice passed the compliance check:
+     * simplified invoices are REPORTED, standard invoices are CLEARED.
+     */
+    public function success(): bool
+    {
+        return $this->reportingStatus() === 'REPORTED' || $this->clearanceStatus() === 'CLEARED';
+    }
+
     public function status(): ?string
     {
         return $this->getOptionalAttribute('status');

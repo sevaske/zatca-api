@@ -75,7 +75,6 @@ class ValidationResponseTest extends TestCase
             ],
         ]);
 
-        $this->assertIsArray($response->validation());
         $this->assertEquals('SUCCESS', $response->validationStatus());
     }
 

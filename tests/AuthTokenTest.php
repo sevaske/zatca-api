@@ -39,7 +39,6 @@ final class AuthTokenTest extends TestCase
         $expected = ['Authorization' => $this->authToken->toBasic()];
         $actual = $this->authToken->toHeader();
 
-        $this->assertIsArray($actual, 'toHeader() should return an array');
         $this->assertArrayHasKey('Authorization', $actual, 'Header array should have "Authorization" key');
         $this->assertSame($expected, $actual, 'Header array should contain correct Authorization header');
     }

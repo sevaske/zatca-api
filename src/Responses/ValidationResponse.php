@@ -33,7 +33,7 @@ class ValidationResponse extends ZatcaResponse
      */
     public function info(): array
     {
-        return (array) ($this->validation()['infoMessages'] ?? []);
+        return $this->messages('infoMessages');
     }
 
     /**
@@ -43,7 +43,7 @@ class ValidationResponse extends ZatcaResponse
      */
     public function warnings(): array
     {
-        return (array) ($this->validation()['warningMessages'] ?? []);
+        return $this->messages('warningMessages');
     }
 
     /**
@@ -53,7 +53,7 @@ class ValidationResponse extends ZatcaResponse
      */
     public function errors(): array
     {
-        return (array) ($this->validation()['errorMessages'] ?? []);
+        return $this->messages('errorMessages');
     }
 
     /**
@@ -74,5 +74,23 @@ class ValidationResponse extends ZatcaResponse
     public function hasWarnings(): bool
     {
         return ! empty($this->warnings());
+    }
+
+    /**
+     * Returns a list of messages. ZATCA may omit the list or return a single message object instead of a list.
+     */
+    private function messages(string $key): array
+    {
+        $messages = $this->validation()[$key] ?? [];
+
+        if (! is_array($messages)) {
+            return (array) $messages;
+        }
+
+        if ($messages !== [] && ! array_is_list($messages)) {
+            return [$messages];
+        }
+
+        return $messages;
     }
 }

@@ -107,6 +107,15 @@ try {
 | `renewProductionCertificate()` | Renew production certificate                    |
 
 
+## Notes
+
+- `$invoiceHash` may be `null` for `reporting()`, `clearance()` and `compliance()`: the hash is then taken from the
+  signature of the signed invoice (the digest of the `invoiceSignedData` reference).
+- Every response has `statusCode()` (the HTTP status) and `success()`.
+- If your HTTP client does not throw on HTTP errors (e.g. Guzzle with `http_errors => false` or a pure PSR-18 client),
+  responses like 401 or 500 are returned as response objects: always check `success()`.
+
+
 ## Exception handling
 
 The library throws the following exceptions which you can catch and handle:

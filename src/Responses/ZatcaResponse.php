@@ -67,8 +67,16 @@ class ZatcaResponse implements ZatcaResponseInterface
         return (array) $parsed;
     }
 
+    /**
+     * HTTP status code of the response, null when the response was created from an array.
+     */
+    public function statusCode(): ?int
+    {
+        return $this->response instanceof ResponseInterface ? $this->response->getStatusCode() : null;
+    }
+
     public function unauthorized(): bool
     {
-        return $this->getOptionalAttribute('status') === 401;
+        return $this->statusCode() === 401 || $this->getOptionalAttribute('status') === 401;
     }
 }

@@ -1,5 +1,20 @@
 {
     "name": "sevaske/zatca-api",
+    "description": "PHP client for the ZATCA (Fatoora) e-invoicing API: reporting, clearance, compliance and certificates.",
+    "keywords": [
+        "zatca",
+        "fatoora",
+        "e-invoicing",
+        "einvoice",
+        "saudi arabia",
+        "ksa",
+        "reporting",
+        "clearance",
+        "csid",
+        "api",
+        "client",
+        "psr-18"
+    ],
     "type": "library",
     "license": "MIT",
     "autoload": {
@@ -11,6 +26,11 @@
         "psr-4": {
             "Sevaske\\ZatcaApi\\Tests\\": "tests/"
         }
+    },
+    "homepage": "https://github.com/sevaske/zatca-api",
+    "support": {
+        "issues": "https://github.com/sevaske/zatca-api/issues",
+        "source": "https://github.com/sevaske/zatca-api"
     },
     "authors": [
         {
@@ -29,5 +49,24 @@
         "phpstan/phpstan": "^2.1",
         "laravel/pint": "^1.20"
     },
+    "suggest": {
+        "guzzlehttp/guzzle": "HTTP client supported out of the box",
+        "guzzlehttp/psr7": "Required to build requests for PSR-18 clients other than Guzzle (or nyholm/psr7)",
+        "sevaske/php-zatca-xml": "Generates and signs ZATCA XML invoices to submit with this client"
+    },
+    "scripts": {
+        "test": "phpunit",
+        "format": "tools/pint/vendor/bin/pint src tests",
+        "format:check": "tools/pint/vendor/bin/pint --test src tests"
+    },
+    "scripts-descriptions": {
+        "test": "Run PHPUnit tests",
+        "format": "Format the code with Laravel Pint",
+        "format:check": "Check code style with Laravel Pint without changing files"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
     "prefer-stable": true
 }

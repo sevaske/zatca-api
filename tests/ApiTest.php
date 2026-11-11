@@ -284,4 +284,68 @@ final class ApiTest extends TestCase
         $this->assertSame([], $response->warnings());
         $this->assertSame([], $response->info());
     }
+
+    public function test_missing_invoice_hash_is_taken_from_the_signed_invoice(): void
+    {
+        $xml = '<Invoice><ds:Signature><ds:SignedInfo>'
+            .'<ds:Reference Id="invoiceSignedData" URI=""><ds:Transforms/>'
+            .'<ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>'
+            .'<ds:DigestValue>V4U5qlZ3yXQ/Si1AC/R8SLc3F+iNy27wdVe8IWRqFAQ=</ds:DigestValue></ds:Reference>'
+            .'<ds:Reference Type="http://www.w3.org/2000/09/xmldsig#SignatureProperties" URI="#xadesSignedProperties">'
+            .'<ds:DigestValue>other</ds:DigestValue></ds:Reference>'
+            .'</ds:SignedInfo></ds:Signature></Invoice>';
+        $ok = $this->validation([], ['reportingStatus' => 'REPORTED']);
+        $api = $this->api([$this->json(200, $ok), $this->json(200, $ok), $this->json(200, $ok)]);
+
+        $api->reporting($xml, null, 'uuid');
+        $this->assertSame(
+            'V4U5qlZ3yXQ/Si1AC/R8SLc3F+iNy27wdVe8IWRqFAQ=',
+            json_decode((string) $this->lastRequest()->getBody(), true)['invoiceHash'],
+        );
+
+        // an explicit hash always wins
+        $api->reporting($xml, 'explicit', 'uuid');
+        $this->assertSame('explicit', json_decode((string) $this->lastRequest()->getBody(), true)['invoiceHash']);
+
+        // previous behaviour when the hash cannot be found
+        $api->reporting('<xml/>', null, 'uuid');
+        $this->assertSame(base64_encode('0'), json_decode((string) $this->lastRequest()->getBody(), true)['invoiceHash']);
+    }
+
+    public function test_errors_in_a_non_throwing_client_response_keep_the_status(): void
+    {
+        $errors = [['message' => 'Invoice was already Reported successfully earlier.', 'status' => 'ERROR']];
+        $api = new Api('sandbox', new Client([
+            'handler' => HandlerStack::create(new MockHandler([
+                $this->json(409, $this->validation($errors, ['reportingStatus' => 'NOT_REPORTED'])),
+            ])),
+            'http_errors' => false,
+        ]), self::CERTIFICATE, self::SECRET);
+
+        try {
+            $api->reporting('<xml/>', 'hash', 'uuid');
+            $this->fail('ZatcaRequestException was not thrown.');
+        } catch (ZatcaRequestException $e) {
+            $this->assertSame('Request failed.', $e->getMessage());
+            $this->assertSame(['errors' => $errors, 'status' => 409], $e->context());
+        }
+    }
+
+    public function test_compliance_response_normalizes_a_single_message_object(): void
+    {
+        $info = ['type' => 'INFO', 'code' => 'XSD_ZATCA_VALID', 'status' => 'PASS'];
+        $api = $this->api([$this->json(200, [
+            'validationResults' => ['infoMessages' => $info, 'status' => 'PASS'],
+            'reportingStatus' => 'REPORTED',
+            'clearanceStatus' => null,
+        ])]);
+
+        $response = $api->compliance('<xml/>', 'hash', 'uuid');
+
+        $this->assertTrue($response->success());
+        $this->assertSame(200, $response->statusCode());
+        $this->assertSame([$info], $response->info());
+        $this->assertSame([], $response->errors());
+        $this->assertFalse($this->lastRequest()->hasHeader('Clearance-Status'));
+    }
 }
