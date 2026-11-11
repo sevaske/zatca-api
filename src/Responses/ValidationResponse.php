@@ -21,7 +21,9 @@ class ValidationResponse extends ZatcaResponse
      */
     public function validationStatus(): ?string
     {
-        return $this->validation()['status'];
+        $status = $this->validation()['status'] ?? null;
+
+        return is_string($status) ? $status : null;
     }
 
     /**
@@ -31,7 +33,7 @@ class ValidationResponse extends ZatcaResponse
      */
     public function info(): array
     {
-        return (array) $this->validation()['infoMessages'];
+        return (array) ($this->validation()['infoMessages'] ?? []);
     }
 
     /**
@@ -41,7 +43,7 @@ class ValidationResponse extends ZatcaResponse
      */
     public function warnings(): array
     {
-        return (array) $this->validation()['warningMessages'];
+        return (array) ($this->validation()['warningMessages'] ?? []);
     }
 
     /**
@@ -51,7 +53,7 @@ class ValidationResponse extends ZatcaResponse
      */
     public function errors(): array
     {
-        return (array) $this->validation()['errorMessages'];
+        return (array) ($this->validation()['errorMessages'] ?? []);
     }
 
     /**

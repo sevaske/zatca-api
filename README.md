@@ -20,7 +20,7 @@ If you’re looking for a library to generate XML invoices, you can use this one
 - Simple authentication with certificate and secret
 - Response handling via typed response objects
 - Environment support: sandbox, simulation, production
-- Uses any PSR-18 compatible HTTP client (e.g., Guzzle)
+- Uses any PSR-18 compatible HTTP client (e.g., Guzzle). Clients other than Guzzle need `guzzlehttp/psr7` or `nyholm/psr7` installed to build requests
 
 
 ## Installation
@@ -114,4 +114,49 @@ The library throws the following exceptions which you can catch and handle:
 - `ZatcaException` — general exception class
 - `ZatcaRequestException` — errors during the HTTP request
 - `ZatcaResponseException` — errors processing the API response
+
+When ZATCA answers with an HTTP error (e.g. a rejected invoice), the exception context contains the answer:
+
+```php
+try {
+    $api->reporting($xml, $hash, $uuid);
+} catch (ZatcaRequestException $e) {
+    $context = $e->context();
+
+    $context['status'];   // HTTP status, e.g. 400
+    $context['errors'];   // ZATCA errors: validationResults.errorMessages for invoices, errors for certificates
+    $context['response']; // decoded JSON body
+    $context['content'];  // raw body
+}
+```
+
+`status`, `content`, `response` and `errors` are present only when the HTTP client provides the error response
+(Guzzle does); `response` and `errors` only when the body is JSON.
+
+
+## Renewing the production certificate
+
+Renewal is authorized by the **current** production certificate and requires an OTP from the Fatoora portal and a new CSR.
+
+```php
+$api->setCredentials($currentProductionCertificate, $currentSecret);
+
+$renewal = $api->renewProductionCertificate($newCsr, $otp);
+
+if ($renewal->success()) {
+    // store $renewal->certificate() and $renewal->secret()
+} elseif ($renewal->isNotCompliant()) {
+    // HTTP 428: ZATCA issued a compliance certificate. Pass the compliance checks with it,
+    // then call productionCertificate($renewal->requestId())
+}
+```
+
+
+## Security
+
+- The certificate secret is a credential: store it encrypted or in a secret manager, never in a public directory or in git.
+  The `file_put_contents()` calls in the example above only illustrate the flow.
+- Do not disable TLS verification in the HTTP client.
+- Exceptions keep the original HTTP client exception as `getPrevious()`; it may reference the request including the
+  `Authorization` header, so do not dump it to logs.
 

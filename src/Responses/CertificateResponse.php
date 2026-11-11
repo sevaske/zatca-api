@@ -16,7 +16,7 @@ class CertificateResponse extends ZatcaResponse
 
     public function secret(): string
     {
-        return $this->getOptionalAttribute('secret');
+        return (string) $this->getOptionalAttribute('secret');
     }
 
     public function binarySecurityToken(): ?string

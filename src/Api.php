@@ -38,8 +38,8 @@ class Api
     public function __construct(
         ZatcaEnvironmentEnum|string $environment,
         ClientInterface $httpClient,
-        ?string $certificate = null,
-        ?string $secret = null,
+        #[\SensitiveParameter] ?string $certificate = null,
+        #[\SensitiveParameter] ?string $secret = null,
     ) {
         if (is_string($environment)) {
             $environment = ZatcaEnvironmentEnum::from($environment);
@@ -146,7 +146,7 @@ class Api
      * @throws ZatcaResponseException
      * @throws ZatcaRequestException
      */
-    public function complianceCertificate(string $csr, string $otp): CertificateResponse
+    public function complianceCertificate(string $csr, #[\SensitiveParameter] string $otp): CertificateResponse
     {
         $rawResponse = $this->request(
             endpoint: ZatcaEndpointEnum::ComplianceCertificate->value,
@@ -190,17 +190,23 @@ class Api
     }
 
     /**
+     * Renews the production certificate. The current production certificate must be set as credentials.
+     *
      * @throws ZatcaException
      * @throws ZatcaResponseException
      * @throws ZatcaRequestException
      */
-    public function renewProductionCertificate(string $csr, string $otp): RenewalProductionCertificateResponse
+    public function renewProductionCertificate(string $csr, #[\SensitiveParameter] string $otp): RenewalProductionCertificateResponse
     {
+        // PATCH /production/csids, authorized by the current production certificate.
+        // HTTP 428 (NOT_COMPLIANT) carries a compliance certificate, so it is returned as a response.
         $rawResponse = $this->request(
             endpoint: ZatcaEndpointEnum::ProductionCertificate->value,
             payload: ['csr' => base64_encode($csr)],
             headers: ['OTP' => $otp],
-            authToken: false,
+            authToken: true,
+            method: 'PATCH',
+            expectedStatuses: [428],
         );
 
         $response = new RenewalProductionCertificateResponse($rawResponse);
@@ -212,6 +218,19 @@ class Api
         }
 
         return $response;
+    }
+
+    /**
+     * Hides the credentials from var_dump() and similar debug output.
+     */
+    public function __debugInfo(): array
+    {
+        return [
+            'environment' => $this->environment->value,
+            'baseUrl' => $this->baseUrl,
+            'certificate' => $this->certificate === null ? null : '[redacted]',
+            'secret' => $this->secret === null ? null : '[redacted]',
+        ];
     }
 
     private function normalizeInvoiceHash(?string $invoiceHash): string
