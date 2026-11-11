@@ -224,6 +224,7 @@ try {
     $e->getStatusCode();   // e.g. 500
     $e->getErrors();       // list of ApiError (code, message, category)
     $e->getResponseData(); // decoded error body
+    $e->getResponseBody(); // raw error body, e.g. "Invalid Request" when ZATCA answers in plain text
     $e->getResponse();     // PSR-7 response
     $e->getRequest();      // PSR-7 request, Authorization and OTP headers redacted
 } catch (TransportException $e) {

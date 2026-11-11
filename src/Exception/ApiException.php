@@ -19,6 +19,12 @@ use Sevaske\ZatcaApi\Response\ApiError;
 class ApiException extends \RuntimeException implements ZatcaException
 {
     /**
+     * The exception message quotes at most this many characters of an unrecognized error body;
+     * the full body is available via {@see ApiException::getResponseBody()}.
+     */
+    private const BODY_SUMMARY_LENGTH = 120;
+
+    /**
      * Specific exception classes for known status codes. All 5xx codes map to {@see ServerException}.
      */
     private const EXCEPTION_CLASS_BY_STATUS_CODE = [
@@ -105,7 +111,15 @@ class ApiException extends \RuntimeException implements ZatcaException
     }
 
     /**
-     * Decoded JSON body of the error response (empty when the body was not JSON).
+     * Raw body of the error response, e.g. "Invalid Request" when ZATCA answers in plain text.
+     */
+    public function getResponseBody(): string
+    {
+        return $this->response !== null ? self::readBody($this->response) : '';
+    }
+
+    /**
+     * Decoded JSON body of the error response (empty when the body was not JSON, see {@see getResponseBody()}).
      *
      * @return array<array-key, mixed>
      */
@@ -174,6 +188,43 @@ class ApiException extends \RuntimeException implements ZatcaException
     }
 
     /**
+     * One-line summary of a body: whitespace collapsed, cut to {@see BODY_SUMMARY_LENGTH} characters.
+     * Null for an empty body and for a body that is not printable UTF-8 text (binary, other encodings).
+     */
+    private static function summarizeBody(ResponseInterface $response): ?string
+    {
+        $body = trim(self::readBody($response));
+
+        // also false for invalid UTF-8
+        if ($body === '' || preg_match('/^[\pL\pM\pN\pP\pS\pZ\s]*$/u', $body) !== 1) {
+            return null;
+        }
+
+        $summary = (string) preg_replace('/\s+/u', ' ', $body);
+
+        if (preg_match('/^.{' . self::BODY_SUMMARY_LENGTH . '}(?=.)/su', $summary, $match) === 1) {
+            return $match[0] . ' (truncated...)';
+        }
+
+        return $summary;
+    }
+
+    private static function readBody(ResponseInterface $response): string
+    {
+        $stream = $response->getBody();
+
+        try {
+            if ($stream->isSeekable()) {
+                $stream->rewind();
+            }
+
+            return $stream->getContents();
+        } catch (\RuntimeException $e) {
+            return '';
+        }
+    }
+
+    /**
      * @return class-string<ApiException>
      */
     private static function exceptionClassFor(int $statusCode): string
@@ -190,7 +241,8 @@ class ApiException extends \RuntimeException implements ZatcaException
     }
 
     /**
-     * "ZATCA API error (HTTP 400): The provided OTP is invalid [Invalid-OTP]"
+     * "ZATCA API error (HTTP 400): The provided OTP is invalid [Invalid-OTP]": the first error reported by ZATCA,
+     * otherwise a summary of the body ("Invalid Request"), otherwise the reason phrase ("Bad Request").
      *
      * @param list<ApiError> $errors
      */
@@ -202,6 +254,13 @@ class ApiException extends \RuntimeException implements ZatcaException
             if ($error->getMessage() !== '') {
                 return $message . ': ' . $error->getMessage() . ($error->getCode() !== null ? ' [' . $error->getCode() . ']' : '');
             }
+        }
+
+        // an unrecognized body (plain text, HTML, JSON without known error fields) is quoted as is
+        $summary = self::summarizeBody($response);
+
+        if ($summary !== null) {
+            return $message . ': ' . $summary;
         }
 
         $reasonPhrase = $response->getReasonPhrase();

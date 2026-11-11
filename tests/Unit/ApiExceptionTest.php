@@ -81,6 +81,79 @@ final class ApiExceptionTest extends TestCase
         self::assertNotNull($exception->getRequest());
     }
 
+    public function testPlainTextBodyIsQuotedInTheMessage(): void
+    {
+        // the developer-portal sandbox answers a rejected CSR with "Invalid Request" and Content-Type: application/json
+        $exception = self::fromBody(400, "Invalid Request\n");
+
+        self::assertSame('ZATCA API error (HTTP 400): Invalid Request', $exception->getMessage());
+        self::assertSame([], $exception->getErrors(), 'only errors reported by ZATCA in a known format');
+        self::assertSame([], $exception->getResponseData());
+        self::assertSame("Invalid Request\n", $exception->getResponseBody());
+    }
+
+    public function testLongBodyIsTruncatedInTheMessageOnly(): void
+    {
+        $body = "<html>\n  <head><title>502 Bad Gateway</title></head>\n  <body>" . str_repeat('x', 200) . '</body></html>';
+        $exception = self::fromBody(502, $body);
+
+        self::assertSame(
+            'ZATCA API error (HTTP 502): <html> <head><title>502 Bad Gateway</title></head> <body>'
+            . str_repeat('x', 63) . ' (truncated...)',
+            $exception->getMessage(),
+        );
+        self::assertSame($body, $exception->getResponseBody());
+    }
+
+    public function testTruncationKeepsMultibyteCharactersIntact(): void
+    {
+        $exception = self::fromBody(400, str_repeat('ж', 121));
+
+        self::assertSame('ZATCA API error (HTTP 400): ' . str_repeat('ж', 120) . ' (truncated...)', $exception->getMessage());
+    }
+
+    public function testBodyOfExactlyTheSummaryLengthIsNotTruncated(): void
+    {
+        $exception = self::fromBody(400, str_repeat('a', 120));
+
+        self::assertSame('ZATCA API error (HTTP 400): ' . str_repeat('a', 120), $exception->getMessage());
+    }
+
+    public function testBinaryBodyFallsBackToTheReasonPhrase(): void
+    {
+        $body = "\x1f\x8b\x08\x00binary";
+        $exception = self::fromBody(500, $body);
+
+        self::assertSame('ZATCA API error (HTTP 500): Internal Server Error', $exception->getMessage());
+        self::assertSame($body, $exception->getResponseBody());
+    }
+
+    public function testJsonBodyWithoutKnownErrorFieldsIsQuoted(): void
+    {
+        $response = new Response(400, [], '{"foo":"bar"}');
+        $exception = ApiException::fromHttpResponse(new HttpResponse($response, new Request('POST', 'https://example.com'), ['foo' => 'bar']));
+
+        self::assertSame('ZATCA API error (HTTP 400): {"foo":"bar"}', $exception->getMessage());
+        self::assertSame([], $exception->getErrors());
+        self::assertSame(['foo' => 'bar'], $exception->getResponseData());
+    }
+
+    public function testResponseBodyIsReadableAfterTheStreamWasConsumed(): void
+    {
+        $exception = self::fromBody(406, 'This Version is not supported or not provided in the header.');
+
+        $psrResponse = $exception->getResponse();
+        self::assertNotNull($psrResponse);
+        $psrResponse->getBody()->getContents(); // the caller reads the stream to its end
+
+        self::assertSame('This Version is not supported or not provided in the header.', $exception->getResponseBody());
+    }
+
+    private static function fromBody(int $status, string $body): ApiException
+    {
+        return ApiException::fromHttpResponse(new HttpResponse(new Response($status, [], $body), new Request('POST', 'https://example.com'), null));
+    }
+
     /**
      * @param array<array-key, mixed>|null $data
      */

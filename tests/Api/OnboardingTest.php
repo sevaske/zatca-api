@@ -73,6 +73,20 @@ final class OnboardingTest extends ApiTestCase
         }
     }
 
+    public function testPlainTextErrorBodyIsKept(): void
+    {
+        $this->http->addResponse(new Response(400, ['Content-Type' => 'application/json'], 'Invalid Request'));
+
+        try {
+            $this->client->onboarding()->requestComplianceCsid(self::csrPem(), '123345');
+            self::fail('BadRequestException expected');
+        } catch (BadRequestException $e) {
+            self::assertSame('ZATCA API error (HTTP 400): Invalid Request', $e->getMessage());
+            self::assertSame('Invalid Request', $e->getResponseBody());
+            self::assertSame([], $e->getResponseData());
+        }
+    }
+
     public function testInvalidInputFailsBeforeAnyRequest(): void
     {
         try {

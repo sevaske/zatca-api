@@ -196,7 +196,7 @@ exceptions: they are results. Exceptions are thrown for errors only.
 | `ZatcaRequestException` for HTTP errors | `ApiException` and its subclasses (`BadRequestException`, `AuthenticationException`, `ServerException`, ...) |
 | `ZatcaRequestException` for network errors | `TransportException` |
 | `ZatcaResponseException` | `UnexpectedResponseException` |
-| `$e->context()` | `$e->getErrors()`, `$e->getResponseData()`, `$e->getResponse()`, `$e->getRequest()` |
+| `$e->context()` | `$e->getErrors()`, `$e->getResponseData()`, `$e->getResponseBody()`, `$e->getResponse()`, `$e->getRequest()` |
 | catch `ZatcaException` | catch the `Sevaske\ZatcaApi\Exception\ZatcaException` interface |
 
 ### Middleware

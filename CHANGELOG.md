@@ -27,7 +27,9 @@ A rewrite of the client. See [UPGRADE.md](UPGRADE.md) for migrating from 1.x and
 - Results for every validation outcome: `ComplianceCheckResult`, `ReportingResult`, `ClearanceResult`
   (HTTP 200, 202, 208, 303, 400, 409) with `ValidationResults` and `ValidationMessage`.
 - Exception hierarchy mapped from HTTP status codes, all implementing `ZatcaException`; requests attached to
-  exceptions have the Authorization and OTP headers redacted.
+  exceptions have the Authorization and OTP headers redacted. An error body in an unknown format (plain text such as
+  `Invalid Request`, HTML) is quoted in the exception message, truncated to 120 characters;
+  `ApiException::getResponseBody()` returns the raw body.
 - `InvoiceSubmitter` contract for faking the API in tests.
 
 ### Changed
